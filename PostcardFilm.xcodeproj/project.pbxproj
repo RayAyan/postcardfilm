@@ -1,0 +1,662 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		04C7C3B10DB7A5F8887C87FD /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD86F83C273CEEFE6C844661 /* Colors.swift */; };
+		0BEE7D52F68013A2C23B52E7 /* GallerySelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA9CEE8FDC1487A4D26BF28 /* GallerySelectionTests.swift */; };
+		0D7EF4DF94656BB180B67BAA /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A85D9AD9B0F65CA62DBE0DA /* CameraPreviewView.swift */; };
+		0E7BE3EF632743B92AC84889 /* PolaroidRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E1A70A27EE6D0AC2E9529F0 /* PolaroidRecord.swift */; };
+		15DE34E5A95CBA1B69F7E1A3 /* GallerySelectionLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F3E008AE07A53E1B85C60 /* GallerySelectionLogic.swift */; };
+		19D1515D44A256D95489D649 /* PhotoLibrarySaver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3549F5A820F0F14DDE7BD22 /* PhotoLibrarySaver.swift */; };
+		1FC8029C0BF7A02F716BD2F0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AC4C9FD190A4453A9C2E4015 /* PrivacyInfo.xcprivacy */; };
+		2062198732D4DE1E8F159272 /* FrameGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1585BDE1221BAEFC850EE90 /* FrameGeometry.swift */; };
+		2455151CAEB083655F456CD4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BAE237F5168DF700594E416E /* Assets.xcassets */; };
+		2462B7CA9CE68C19B902E5E4 /* PolaroidPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */; };
+		29EBB292B870953EBCC9A81D /* Wordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4821F8DA735BD6099D53F11 /* Wordmark.swift */; };
+		39495DE8E84A1B19BF451787 /* BrandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1305512C562B4F455C668D2 /* BrandTests.swift */; };
+		394BBEBAB89445331663F7DD /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D83192A290DD9FBC19FA173 /* Typography.swift */; };
+		42757D3944817874E9E6C4C3 /* CaptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0802F8E0747FDBF63329BE50 /* CaptionTests.swift */; };
+		4714E9B28456705FB99E5B29 /* PolaroidIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDE69D45CE4F6446C6698EC /* PolaroidIndexTests.swift */; };
+		4A934DC2D0592DA72F8F90B2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4F6459B9F2C67B2933D9A3 /* HomeView.swift */; };
+		4E6790684CAB022573B05A1B /* GradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */; };
+		5AFE4392C5788988DBCA94AC /* Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EB27F71283A07BFB6021B2 /* Brand.swift */; };
+		66B05250AF64BEA424751A16 /* PostcardFilmApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F46352101568F853C156E4 /* PostcardFilmApp.swift */; };
+		676DAE89BEA872E253FC2156 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B89109B7EE631EA77F7976D8 /* GalleryView.swift */; };
+		79F4AAD5B300E0EB0649C18B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014E8FCC215D25F776ED18CD /* SettingsView.swift */; };
+		816038252BA46C094DCC5C46 /* Caption.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15DA5C450CB663051C3DC9E /* Caption.swift */; };
+		8D44A51ED13AEF18A43BD43C /* DevelopingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */; };
+		B2E2DB606DEDF7D35DD9CDE9 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BEB36F8D1AF367914C91878 /* Haptics.swift */; };
+		B7BD84B6AB08C8E91727084B /* ScreenshotHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106DDE171243F2F9161E899F /* ScreenshotHarness.swift */; };
+		B83813D91D91394DCC560CF3 /* Grade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB6F219B74F23624AFD42FB /* Grade.swift */; };
+		CA5678033992F55037B58B93 /* ProcessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF748D9FFACD3A5F2665D0C /* ProcessView.swift */; };
+		CB4F4AA69CE72E84906AACE0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13653ABFB0E3BD5894CF779 /* ContentView.swift */; };
+		CDECEA175C49C507213CB11A /* CustomCaptionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA0154A64A191CA8FE79D0F /* CustomCaptionPrompt.swift */; };
+		DACCEEF2A9967DA9096DB495 /* FrameGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */; };
+		DBE0BD86F2F5D32D67030BE8 /* Caveat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AF24128EFD61AC3495B3DECB /* Caveat-Regular.ttf */; };
+		DC30EBB4B197F46AE181CB96 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F181D5CF10DA14F1DCE47AB4 /* CameraController.swift */; };
+		DC9043D2ACFC9E3881BDC7FA /* AppSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B05F695A2D9B155900F86C /* AppSettingsTests.swift */; };
+		F7C5D69267CF2A36CB719227 /* PolaroidStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4853155333BACE3BF457B487 /* PolaroidStore.swift */; };
+		F9DADE2DBA611FC2D2BF4CE9 /* PipelineSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9EA96CA963893E19F0BE8E /* PipelineSmokeTests.swift */; };
+		FDF2A15D7446A0D86C3B4759 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5B2CE9E194FF92A56FB05B /* AppSettings.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7E19280B49DA8803FBDB0409 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 01DA572E18DBC06AEBA9C010 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DA8C66634C6879CCD7408644;
+			remoteInfo = PostcardFilm;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		014E8FCC215D25F776ED18CD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		024F3E008AE07A53E1B85C60 /* GallerySelectionLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GallerySelectionLogic.swift; sourceTree = "<group>"; };
+		0802F8E0747FDBF63329BE50 /* CaptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionTests.swift; sourceTree = "<group>"; };
+		106DDE171243F2F9161E899F /* ScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotHarness.swift; sourceTree = "<group>"; };
+		2A85D9AD9B0F65CA62DBE0DA /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeTests.swift; sourceTree = "<group>"; };
+		35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidPipeline.swift; sourceTree = "<group>"; };
+		3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopingOverlay.swift; sourceTree = "<group>"; };
+		4853155333BACE3BF457B487 /* PolaroidStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidStore.swift; sourceTree = "<group>"; };
+		6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameGeometryTests.swift; sourceTree = "<group>"; };
+		67EB27F71283A07BFB6021B2 /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
+		79F46352101568F853C156E4 /* PostcardFilmApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostcardFilmApp.swift; sourceTree = "<group>"; };
+		7BEB36F8D1AF367914C91878 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		7D83192A290DD9FBC19FA173 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		7FAB137149E429A899330FD1 /* PostcardFilmTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PostcardFilmTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8041579F5DD10B8DCC2B6ECD /* PostcardFilm.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PostcardFilm.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		88B05F695A2D9B155900F86C /* AppSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsTests.swift; sourceTree = "<group>"; };
+		8DB6F219B74F23624AFD42FB /* Grade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grade.swift; sourceTree = "<group>"; };
+		8F9EA96CA963893E19F0BE8E /* PipelineSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineSmokeTests.swift; sourceTree = "<group>"; };
+		9E1A70A27EE6D0AC2E9529F0 /* PolaroidRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidRecord.swift; sourceTree = "<group>"; };
+		A1585BDE1221BAEFC850EE90 /* FrameGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameGeometry.swift; sourceTree = "<group>"; };
+		AC4C9FD190A4453A9C2E4015 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		ACF748D9FFACD3A5F2665D0C /* ProcessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessView.swift; sourceTree = "<group>"; };
+		AD86F83C273CEEFE6C844661 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
+		ADA0154A64A191CA8FE79D0F /* CustomCaptionPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCaptionPrompt.swift; sourceTree = "<group>"; };
+		AEA9CEE8FDC1487A4D26BF28 /* GallerySelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GallerySelectionTests.swift; sourceTree = "<group>"; };
+		AF24128EFD61AC3495B3DECB /* Caveat-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Caveat-Regular.ttf"; sourceTree = "<group>"; };
+		B89109B7EE631EA77F7976D8 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		BAE237F5168DF700594E416E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C1305512C562B4F455C668D2 /* BrandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandTests.swift; sourceTree = "<group>"; };
+		D13653ABFB0E3BD5894CF779 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		D15DA5C450CB663051C3DC9E /* Caption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Caption.swift; sourceTree = "<group>"; };
+		D3549F5A820F0F14DDE7BD22 /* PhotoLibrarySaver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibrarySaver.swift; sourceTree = "<group>"; };
+		DA4F6459B9F2C67B2933D9A3 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		E4821F8DA735BD6099D53F11 /* Wordmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wordmark.swift; sourceTree = "<group>"; };
+		EC5B2CE9E194FF92A56FB05B /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		F181D5CF10DA14F1DCE47AB4 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
+		FCDE69D45CE4F6446C6698EC /* PolaroidIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidIndexTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		00CD4B7EBAB7D8E9D0D52F31 /* PostcardFilm */ = {
+			isa = PBXGroup;
+			children = (
+				7A5F957AC3775FE583A05D70 /* App */,
+				390626C7FC1B78A8202C5487 /* Features */,
+				AA964E838F1CADD9004C30C2 /* Processing */,
+				F8180CE6ECFC9FBE1B21DF84 /* Resources */,
+				926C782D91267E7B9CE5BB32 /* Settings */,
+				EE5AFFD77DAE5B9589867CE9 /* Store */,
+				4AC7351BA37D0FAA0EF92A9A /* Support */,
+				72A1EA003ECC6B650D53A294 /* Theme */,
+			);
+			path = PostcardFilm;
+			sourceTree = "<group>";
+		};
+		074B5373EC7C2D203F2B262D /* PostcardFilmTests */ = {
+			isa = PBXGroup;
+			children = (
+				88B05F695A2D9B155900F86C /* AppSettingsTests.swift */,
+				C1305512C562B4F455C668D2 /* BrandTests.swift */,
+				0802F8E0747FDBF63329BE50 /* CaptionTests.swift */,
+				6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */,
+				AEA9CEE8FDC1487A4D26BF28 /* GallerySelectionTests.swift */,
+				3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */,
+				8F9EA96CA963893E19F0BE8E /* PipelineSmokeTests.swift */,
+				FCDE69D45CE4F6446C6698EC /* PolaroidIndexTests.swift */,
+			);
+			path = PostcardFilmTests;
+			sourceTree = "<group>";
+		};
+		113F81B1C14FFF6579CD7422 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				AF24128EFD61AC3495B3DECB /* Caveat-Regular.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		22D77263D29FE12A75612D08 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				ADA0154A64A191CA8FE79D0F /* CustomCaptionPrompt.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		36B9E69700537C5C41BAE312 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8041579F5DD10B8DCC2B6ECD /* PostcardFilm.app */,
+				7FAB137149E429A899330FD1 /* PostcardFilmTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		390626C7FC1B78A8202C5487 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A0E6C109F431357F912FD184 /* Gallery */,
+				399BCEC7CFB907D1C5EBF733 /* Home */,
+				564E2163A16281C4F9C86EFD /* Process */,
+				FA703CEDE6455510B354CD32 /* Settings */,
+				22D77263D29FE12A75612D08 /* Shared */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		399BCEC7CFB907D1C5EBF733 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				F181D5CF10DA14F1DCE47AB4 /* CameraController.swift */,
+				2A85D9AD9B0F65CA62DBE0DA /* CameraPreviewView.swift */,
+				3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */,
+				DA4F6459B9F2C67B2933D9A3 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		4AC7351BA37D0FAA0EF92A9A /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				7BEB36F8D1AF367914C91878 /* Haptics.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		564E2163A16281C4F9C86EFD /* Process */ = {
+			isa = PBXGroup;
+			children = (
+				ACF748D9FFACD3A5F2665D0C /* ProcessView.swift */,
+			);
+			path = Process;
+			sourceTree = "<group>";
+		};
+		72A1EA003ECC6B650D53A294 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				67EB27F71283A07BFB6021B2 /* Brand.swift */,
+				AD86F83C273CEEFE6C844661 /* Colors.swift */,
+				7D83192A290DD9FBC19FA173 /* Typography.swift */,
+				E4821F8DA735BD6099D53F11 /* Wordmark.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		7925CC492FA115D8B313C01B = {
+			isa = PBXGroup;
+			children = (
+				00CD4B7EBAB7D8E9D0D52F31 /* PostcardFilm */,
+				074B5373EC7C2D203F2B262D /* PostcardFilmTests */,
+				36B9E69700537C5C41BAE312 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7A5F957AC3775FE583A05D70 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				D13653ABFB0E3BD5894CF779 /* ContentView.swift */,
+				79F46352101568F853C156E4 /* PostcardFilmApp.swift */,
+				106DDE171243F2F9161E899F /* ScreenshotHarness.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		926C782D91267E7B9CE5BB32 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				EC5B2CE9E194FF92A56FB05B /* AppSettings.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		A0E6C109F431357F912FD184 /* Gallery */ = {
+			isa = PBXGroup;
+			children = (
+				024F3E008AE07A53E1B85C60 /* GallerySelectionLogic.swift */,
+				B89109B7EE631EA77F7976D8 /* GalleryView.swift */,
+			);
+			path = Gallery;
+			sourceTree = "<group>";
+		};
+		AA964E838F1CADD9004C30C2 /* Processing */ = {
+			isa = PBXGroup;
+			children = (
+				D15DA5C450CB663051C3DC9E /* Caption.swift */,
+				A1585BDE1221BAEFC850EE90 /* FrameGeometry.swift */,
+				8DB6F219B74F23624AFD42FB /* Grade.swift */,
+				35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */,
+			);
+			path = Processing;
+			sourceTree = "<group>";
+		};
+		EE5AFFD77DAE5B9589867CE9 /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				D3549F5A820F0F14DDE7BD22 /* PhotoLibrarySaver.swift */,
+				9E1A70A27EE6D0AC2E9529F0 /* PolaroidRecord.swift */,
+				4853155333BACE3BF457B487 /* PolaroidStore.swift */,
+			);
+			path = Store;
+			sourceTree = "<group>";
+		};
+		F8180CE6ECFC9FBE1B21DF84 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				BAE237F5168DF700594E416E /* Assets.xcassets */,
+				AC4C9FD190A4453A9C2E4015 /* PrivacyInfo.xcprivacy */,
+				113F81B1C14FFF6579CD7422 /* Fonts */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		FA703CEDE6455510B354CD32 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				014E8FCC215D25F776ED18CD /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D8A843ED4AE47D24B70AFB8F /* PostcardFilmTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 81951FA38B38E8FFF692CF30 /* Build configuration list for PBXNativeTarget "PostcardFilmTests" */;
+			buildPhases = (
+				FF0CD38227F4DA7BE8809536 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1EB5307D4426FE6AEAA1956A /* PBXTargetDependency */,
+			);
+			name = PostcardFilmTests;
+			packageProductDependencies = (
+			);
+			productName = PostcardFilmTests;
+			productReference = 7FAB137149E429A899330FD1 /* PostcardFilmTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		DA8C66634C6879CCD7408644 /* PostcardFilm */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0D4775F927F2401013DE5A74 /* Build configuration list for PBXNativeTarget "PostcardFilm" */;
+			buildPhases = (
+				265A2400ED60A41133E3D11D /* Sources */,
+				7CDE5C0C1848D53F70CC32F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PostcardFilm;
+			packageProductDependencies = (
+			);
+			productName = PostcardFilm;
+			productReference = 8041579F5DD10B8DCC2B6ECD /* PostcardFilm.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		01DA572E18DBC06AEBA9C010 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					DA8C66634C6879CCD7408644 = {
+						DevelopmentTeam = NS3BMJWSNV;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FDF6F75E5A026B078FE42397 /* Build configuration list for PBXProject "PostcardFilm" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7925CC492FA115D8B313C01B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 36B9E69700537C5C41BAE312 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DA8C66634C6879CCD7408644 /* PostcardFilm */,
+				D8A843ED4AE47D24B70AFB8F /* PostcardFilmTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7CDE5C0C1848D53F70CC32F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2455151CAEB083655F456CD4 /* Assets.xcassets in Resources */,
+				DBE0BD86F2F5D32D67030BE8 /* Caveat-Regular.ttf in Resources */,
+				1FC8029C0BF7A02F716BD2F0 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		265A2400ED60A41133E3D11D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FDF2A15D7446A0D86C3B4759 /* AppSettings.swift in Sources */,
+				5AFE4392C5788988DBCA94AC /* Brand.swift in Sources */,
+				DC30EBB4B197F46AE181CB96 /* CameraController.swift in Sources */,
+				0D7EF4DF94656BB180B67BAA /* CameraPreviewView.swift in Sources */,
+				816038252BA46C094DCC5C46 /* Caption.swift in Sources */,
+				04C7C3B10DB7A5F8887C87FD /* Colors.swift in Sources */,
+				CB4F4AA69CE72E84906AACE0 /* ContentView.swift in Sources */,
+				CDECEA175C49C507213CB11A /* CustomCaptionPrompt.swift in Sources */,
+				8D44A51ED13AEF18A43BD43C /* DevelopingOverlay.swift in Sources */,
+				2062198732D4DE1E8F159272 /* FrameGeometry.swift in Sources */,
+				15DE34E5A95CBA1B69F7E1A3 /* GallerySelectionLogic.swift in Sources */,
+				676DAE89BEA872E253FC2156 /* GalleryView.swift in Sources */,
+				B83813D91D91394DCC560CF3 /* Grade.swift in Sources */,
+				B2E2DB606DEDF7D35DD9CDE9 /* Haptics.swift in Sources */,
+				4A934DC2D0592DA72F8F90B2 /* HomeView.swift in Sources */,
+				19D1515D44A256D95489D649 /* PhotoLibrarySaver.swift in Sources */,
+				2462B7CA9CE68C19B902E5E4 /* PolaroidPipeline.swift in Sources */,
+				0E7BE3EF632743B92AC84889 /* PolaroidRecord.swift in Sources */,
+				F7C5D69267CF2A36CB719227 /* PolaroidStore.swift in Sources */,
+				66B05250AF64BEA424751A16 /* PostcardFilmApp.swift in Sources */,
+				CA5678033992F55037B58B93 /* ProcessView.swift in Sources */,
+				B7BD84B6AB08C8E91727084B /* ScreenshotHarness.swift in Sources */,
+				79F4AAD5B300E0EB0649C18B /* SettingsView.swift in Sources */,
+				394BBEBAB89445331663F7DD /* Typography.swift in Sources */,
+				29EBB292B870953EBCC9A81D /* Wordmark.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FF0CD38227F4DA7BE8809536 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC9043D2ACFC9E3881BDC7FA /* AppSettingsTests.swift in Sources */,
+				39495DE8E84A1B19BF451787 /* BrandTests.swift in Sources */,
+				42757D3944817874E9E6C4C3 /* CaptionTests.swift in Sources */,
+				DACCEEF2A9967DA9096DB495 /* FrameGeometryTests.swift in Sources */,
+				0BEE7D52F68013A2C23B52E7 /* GallerySelectionTests.swift in Sources */,
+				4E6790684CAB022573B05A1B /* GradeTests.swift in Sources */,
+				F9DADE2DBA611FC2D2BF4CE9 /* PipelineSmokeTests.swift in Sources */,
+				4714E9B28456705FB99E5B29 /* PolaroidIndexTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1EB5307D4426FE6AEAA1956A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DA8C66634C6879CCD7408644 /* PostcardFilm */;
+			targetProxy = 7E19280B49DA8803FBDB0409 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		08E3516450E6F21EF9609595 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = NS3BMJWSNV;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PostcardFilm/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.postcardfilm.app;
+				PRODUCT_NAME = PostcardFilm;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		5F2EC20459C3FC3D7734BF41 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.postcardfilm.app.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PostcardFilm.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PostcardFilm";
+			};
+			name = Debug;
+		};
+		9C127F8DDA20A06A3B60E6AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.postcardfilm.app.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PostcardFilm.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PostcardFilm";
+			};
+			name = Release;
+		};
+		DEF43A1F71E36AB7C7AC773A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E1EC6E17864C19AF238112EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = NS3BMJWSNV;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PostcardFilm/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.postcardfilm.app;
+				PRODUCT_NAME = PostcardFilm;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F9CE0308158D766C9DD04ADB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0D4775F927F2401013DE5A74 /* Build configuration list for PBXNativeTarget "PostcardFilm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1EC6E17864C19AF238112EA /* Debug */,
+				08E3516450E6F21EF9609595 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		81951FA38B38E8FFF692CF30 /* Build configuration list for PBXNativeTarget "PostcardFilmTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F2EC20459C3FC3D7734BF41 /* Debug */,
+				9C127F8DDA20A06A3B60E6AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FDF6F75E5A026B078FE42397 /* Build configuration list for PBXProject "PostcardFilm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F9CE0308158D766C9DD04ADB /* Debug */,
+				DEF43A1F71E36AB7C7AC773A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 01DA572E18DBC06AEBA9C010 /* Project object */;
+}

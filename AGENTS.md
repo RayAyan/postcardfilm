@@ -1,3 +1,7 @@
-# Expo HAS CHANGED
+# Native SwiftUI iPhone app
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+This repo is **postcardfilm** — a native SwiftUI project.
+
+- Open `PostcardFilm.xcodeproj` in Xcode.
+- Regenerate with `xcodegen generate` after editing `project.yml`.
+- Do not add Node, Expo, React Native, or Android targets.
