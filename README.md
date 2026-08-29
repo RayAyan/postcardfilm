@@ -68,13 +68,17 @@ swift Scripts/verify_logic.swift
 
 - Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) and `Info.plist` (`1.0.0` / `1`)
 - Shown in Settings footer as `postcardfilm. 1.0.0`
+- Strategy (semver, What’s New voice, cut checklist): [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md)
+- Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md)
 
 ### Cut a release
 
-1. Move `[Unreleased]` entries in `CHANGELOG.md` to `[x.y.z] - YYYY-MM-DD`
-2. Bump versions in `project.yml` + `Info.plist`, run `xcodegen generate`
-3. Append a row to `docs/VERSIONS.md`
-4. Tag `vx.y.z`
+Follow the checklist in [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Short version:
+
+1. Move `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md`
+2. Draft short lowercase App Store “What’s New” from that section
+3. Bump `project.yml` + `Info.plist`, run `xcodegen generate`
+4. Row in `docs/VERSIONS.md`, tag `vx.y.z`, archive / upload
 
 ### Store screenshots
 

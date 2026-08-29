@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+How we cut releases, write App Store “What’s New”, and bump versions:
+[`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md).
+
 ## [Unreleased]
+
+<!-- App Store What’s New (draft when cutting): keep short, lowercase, poetic. -->
+
 
 ### Added
 
@@ -66,5 +72,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expo / React Native / Jest / Node toolchain
 - Any Android target or dependency
 
-[Unreleased]: https://github.com/local/postcardfilm/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/local/postcardfilm/releases/tag/v1.0.0
+[Unreleased]: https://github.com/RayAyan/postcardfilm/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/RayAyan/postcardfilm/releases/tag/v1.0.0
