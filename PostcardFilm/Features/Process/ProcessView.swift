@@ -19,6 +19,7 @@ struct ProcessView: View {
     @State private var draftMode: CaptionMode = .date
     @State private var draftCustom = ""
     @State private var draftFont: CaptionFont = .serif
+    @State private var draftFontSize: CaptionFontSize = .medium
     @State private var draftCase: DateCaseStyle = .lowercase
     @State private var draftBackNote = ""
     @State private var draftBackFont: CaptionFont = .script
@@ -29,9 +30,11 @@ struct ProcessView: View {
     @State private var saveResetTask: Task<Void, Never>?
     @State private var isReburning = false
     @State private var isDeveloping: Bool
+    @State private var overlayElapsed = false
     @State private var isFlipped = false
     @State private var flipAngle: Double = 0
     @State private var isFlipping = false
+    @State private var sharePayload: SharePayload?
 
     private var reduceMotion: Bool {
         UIAccessibility.isReduceMotionEnabled
@@ -66,6 +69,8 @@ struct ProcessView: View {
                 }
             } else if let record {
                 content(record)
+            } else if openedFromCapture {
+                content(nil)
             } else {
                 ProgressView()
                     .tint(AppTheme.textPrimary)
@@ -145,6 +150,7 @@ struct ProcessView: View {
                 draftMode: $draftMode,
                 draftCustom: $draftCustom,
                 draftFont: $draftFont,
+                draftFontSize: $draftFontSize,
                 draftCase: $draftCase,
                 onCancel: { showCaptionSheet = false },
                 onSave: { Task { await saveCaption() } }
@@ -160,16 +166,22 @@ struct ProcessView: View {
             )
             .presentationDetents([.medium, .large])
         }
+        .sheet(item: $sharePayload) { payload in
+            ActivityShareSheet(items: payload.items)
+        }
         .onAppear { reload() }
+        .onChange(of: store.items) { _, _ in
+            reload()
+        }
         .onDisappear { saveResetTask?.cancel() }
     }
 
-    private func content(_ record: PolaroidRecord) -> some View {
+    private func content(_ record: PolaroidRecord?) -> some View {
         VStack(spacing: 0) {
             Spacer(minLength: 8)
 
             Button {
-                guard !isDeveloping, !isFlipping else { return }
+                guard let record, !isDeveloping, !isFlipping else { return }
                 if isFlipped {
                     draftBackNote = record.backNote ?? ""
                     draftBackFont = record.backFont
@@ -178,6 +190,7 @@ struct ProcessView: View {
                     draftMode = record.captionMode
                     draftCustom = record.captionMode == .custom ? record.caption : ""
                     draftFont = record.captionFont
+                    draftFontSize = record.captionFontSize
                     draftCase = inferredCase(for: record)
                     showCaptionSheet = true
                 }
@@ -185,7 +198,7 @@ struct ProcessView: View {
                 flipCard(record)
                     .padding(.horizontal, 20)
             }
-            .disabled(isDeveloping || isFlipping)
+            .disabled(isDeveloping || isFlipping || record == nil)
             .accessibilityLabel(cardAccessibility(record))
 
             Text(hintText)
@@ -198,22 +211,29 @@ struct ProcessView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center, spacing: 16) {
+                    highlightButton
+
                     Spacer(minLength: 0)
 
                     HStack(spacing: 16) {
+                        actionButton(systemName: "square.and.arrow.up", label: "share print") {
+                            Task { await prepareShare() }
+                        }
+                        .disabled(isDeveloping || isFlipping || isSaving || record == nil)
                         actionButton(systemName: "trash", label: "delete print") {
                             showDeleteConfirm = true
                         }
-                        .disabled(isDeveloping)
+                        .disabled(isDeveloping || record == nil)
                         actionButton(
                             systemName: saved ? "checkmark" : "square.and.arrow.down",
                             label: saved
                                 ? "saved to photos"
-                                : (isFlipped ? "download back to photos" : "download front to photos")
+                                : (isFlipped ? "download back to photos" : "download front to photos"),
+                            symbolOffsetY: saved ? 0 : -1.5
                         ) {
                             Task { await download() }
                         }
-                        .disabled(isDeveloping || isSaving)
+                        .disabled(isDeveloping || isSaving || record == nil)
                     }
                 }
             }
@@ -222,13 +242,38 @@ struct ProcessView: View {
         }
     }
 
+    private var highlightOn: Bool {
+        record?.captionHighlight ?? true
+    }
+
+    private var highlightButton: some View {
+        Button {
+            Task { await toggleHighlight() }
+        } label: {
+            Image(systemName: "highlighter")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(highlightOn ? AppTheme.graphite : AppTheme.textPrimary)
+                .frame(width: AppTheme.hitTarget, height: AppTheme.hitTarget)
+                .background {
+                    if highlightOn {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(red: 1, green: 235 / 255, blue: 120 / 255).opacity(0.85))
+                            .frame(width: 34, height: 34)
+                    }
+                }
+        }
+        .accessibilityLabel(highlightOn ? "remove highlight" : "add highlight")
+        .disabled(isDeveloping || isReburning || isFlipped || record == nil)
+        .opacity(isFlipped ? 0.35 : 1)
+    }
+
     private var hintText: String {
         if isDeveloping { return Brand.developing }
         return isFlipped ? Brand.backHint : Brand.processHint
     }
 
-    private func cardAccessibility(_ record: PolaroidRecord) -> String {
-        if isDeveloping { return "Developing" }
+    private func cardAccessibility(_ record: PolaroidRecord?) -> String {
+        guard let record, !isDeveloping else { return "Developing" }
         if isFlipped {
             if record.hasBackNote {
                 return "Back of print, \(record.backNote ?? "")"
@@ -242,10 +287,10 @@ struct ProcessView: View {
     }
 
     @ViewBuilder
-    private func flipCard(_ record: PolaroidRecord) -> some View {
+    private func flipCard(_ record: PolaroidRecord?) -> some View {
         let showingBack = flipAngle >= 90
         ZStack {
-            if showingBack {
+            if showingBack, let record {
                 backFace(record)
                     .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
             } else {
@@ -265,10 +310,14 @@ struct ProcessView: View {
             .frame(maxWidth: .infinity)
             .overlay {
                 if isDeveloping {
-                    DevelopingOverlay(reduceMotion: reduceMotion, duration: 3) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            isDeveloping = false
-                        }
+                    DevelopingOverlay(
+                        reduceMotion: reduceMotion,
+                        labelHold: 1.5,
+                        fadeDuration: 3.0,
+                        printReady: record != nil
+                    ) {
+                        overlayElapsed = true
+                        maybeRevealPrint()
                     }
                 }
             }
@@ -313,11 +362,17 @@ struct ProcessView: View {
             )
     }
 
-    private func actionButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
+    private func actionButton(
+        systemName: String,
+        label: String,
+        symbolOffsetY: CGFloat = 0,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 22))
                 .foregroundStyle(AppTheme.textPrimary)
+                .offset(y: symbolOffsetY)
                 .frame(width: AppTheme.hitTarget, height: AppTheme.hitTarget)
         }
         .accessibilityLabel(label)
@@ -353,10 +408,24 @@ struct ProcessView: View {
 
     private func reload() {
         if let item = store.polaroid(id: id) {
+            let wasNil = record == nil
             record = item
+            missing = false
+            if wasNil { bust += 1 }
+            maybeRevealPrint()
+        } else if openedFromCapture {
             missing = false
         } else {
             missing = true
+        }
+    }
+
+    private func maybeRevealPrint() {
+        guard overlayElapsed || !isDeveloping else { return }
+        guard record != nil else { return }
+        guard isDeveloping else { return }
+        withAnimation(.easeOut(duration: 0.25)) {
+            isDeveloping = false
         }
     }
 
@@ -442,9 +511,23 @@ struct ProcessView: View {
             mode: draftMode,
             custom: custom,
             font: draftFont,
+            fontSize: draftFontSize,
             dateCase: draftCase
         )
         showCaptionSheet = false
+    }
+
+    private func toggleHighlight() async {
+        guard let record, !isFlipped else { return }
+        Haptics.lightTap()
+        let custom = record.captionMode == .custom ? record.caption : ""
+        await reburnFront(
+            mode: record.captionMode,
+            custom: custom,
+            font: record.captionFont,
+            fontSize: record.captionFontSize,
+            highlight: !record.captionHighlight
+        )
     }
 
     private func saveBackNote() async {
@@ -485,11 +568,14 @@ struct ProcessView: View {
         mode: CaptionMode,
         custom: String,
         font: CaptionFont,
-        dateCase: DateCaseStyle? = nil
+        fontSize: CaptionFontSize,
+        dateCase: DateCaseStyle? = nil,
+        highlight: Bool? = nil
     ) async {
         guard let record, !isReburning else { return }
         isReburning = true
         defer { isReburning = false }
+        let useHighlight = highlight ?? record.captionHighlight
         do {
             let data = try Data(contentsOf: store.originalURL(for: id))
             let burnDate = Caption.parseISODate(record.createdAt) ?? Date()
@@ -501,19 +587,53 @@ struct ProcessView: View {
                 dateCase: burnCase,
                 customText: custom,
                 captionFont: font,
-                captionHighlight: record.captionHighlight,
-                date: burnDate
+                captionFontSize: fontSize,
+                captionHighlight: useHighlight,
+                date: burnDate,
+                filmStock: record.filmStock,
+                filmStrength: record.filmStrength,
+                serendipitySeed: id
             )
             try store.updateCaption(
                 id: id,
                 caption: result.caption,
                 captionMode: mode,
                 captionFont: font,
-                captionHighlight: record.captionHighlight,
+                captionFontSize: fontSize,
+                captionHighlight: useHighlight,
                 polaroidPNG: result.png
             )
             bust += 1
+            ThumbnailCache.invalidate(url: store.polaroidURL(for: id))
             reload()
+        } catch {
+            alertMessage = error.localizedDescription
+            showAlert = true
+        }
+    }
+
+    @MainActor
+    private func prepareShare() async {
+        do {
+            let image: UIImage
+            if isFlipped {
+                let back = store.backURL(for: id)
+                if FileManager.default.fileExists(atPath: back.path),
+                   let loaded = UIImage(contentsOfFile: back.path)
+                {
+                    image = loaded
+                } else if let record, record.hasBackNote, let note = record.backNote {
+                    image = try PolaroidPipeline.renderBack(note: note, font: record.backFont)
+                } else {
+                    image = try PolaroidPipeline.renderBlankBack()
+                }
+            } else {
+                guard let loaded = UIImage(contentsOfFile: store.polaroidURL(for: id).path) else {
+                    throw PipelineError.decodeFailed
+                }
+                image = loaded
+            }
+            sharePayload = SharePayload(items: [image])
         } catch {
             alertMessage = error.localizedDescription
             showAlert = true
@@ -525,6 +645,7 @@ private struct CaptionEditSheet: View {
     @Binding var draftMode: CaptionMode
     @Binding var draftCustom: String
     @Binding var draftFont: CaptionFont
+    @Binding var draftFontSize: CaptionFontSize
     @Binding var draftCase: DateCaseStyle
     var onCancel: () -> Void
     var onSave: () -> Void
@@ -577,6 +698,27 @@ private struct CaptionEditSheet: View {
                                     .foregroundStyle(AppTheme.textPrimary)
                                 Spacer()
                                 if draftFont == font {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(AppTheme.textPrimary)
+                                }
+                            }
+                            .frame(minHeight: AppTheme.hitTarget)
+                        }
+                    }
+                }
+
+                Section("size") {
+                    ForEach(CaptionFontSize.allCases) { size in
+                        Button {
+                            draftFontSize = size
+                        } label: {
+                            HStack {
+                                Text(size.label)
+                                    .font(AppType.body(17))
+                                    .appChromeText()
+                                    .foregroundStyle(AppTheme.textPrimary)
+                                Spacer()
+                                if draftFontSize == size {
                                     Image(systemName: "checkmark")
                                         .foregroundStyle(AppTheme.textPrimary)
                                 }

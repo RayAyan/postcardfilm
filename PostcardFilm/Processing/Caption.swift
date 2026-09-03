@@ -93,6 +93,32 @@ enum CaptionFont: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Strip caption point-size relative to the Polaroid strip height.
+enum CaptionFontSize: String, Codable, CaseIterable, Identifiable {
+    case small
+    case medium
+    case large
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .small: return "small"
+        case .medium: return "medium"
+        case .large: return "large"
+        }
+    }
+
+    /// Multiplier of strip height used when burning the caption.
+    var stripScale: CGFloat {
+        switch self {
+        case .small: return 0.24
+        case .medium: return 0.30
+        case .large: return 0.38
+        }
+    }
+}
+
 enum Caption {
     /// Front strip custom text — short enough to look like a Polaroid caption.
     /// Date mode is not truncated to this length.
@@ -128,7 +154,7 @@ enum Caption {
         let raw: String
         switch format {
         case .long:
-            raw = "\(d) \(months[m]) \(y)"
+            raw = "\(pad2(d)) \(months[m]) \(y)"
         case .short:
             raw = "\(pad2(m + 1)).\(pad2(d)).\(String(String(y).suffix(2)))"
         case .iso:

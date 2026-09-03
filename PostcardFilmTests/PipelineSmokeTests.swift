@@ -10,12 +10,15 @@ final class PipelineSmokeTests: XCTestCase {
             captionMode: .date,
             dateFormat: .long,
             customText: "",
-            date: Date(timeIntervalSince1970: 1_700_000_000)
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            filmStock: .onestep
         )
         XCTAssertFalse(result.originalJPEG.isEmpty)
         XCTAssertFalse(result.polaroidPNG.isEmpty)
         XCTAssertFalse(result.caption.isEmpty)
         XCTAssertEqual(result.captionMode, .date)
+        XCTAssertEqual(result.filmStock, .onestep)
+        XCTAssertEqual(result.filmStrength, 1.0, accuracy: 0.0001)
         XCTAssertNotNil(UIImage(data: result.polaroidPNG))
         XCTAssertNotNil(UIImage(data: result.originalJPEG))
     }
@@ -28,10 +31,14 @@ final class PipelineSmokeTests: XCTestCase {
             dateFormat: .long,
             customText: "hello film",
             captionFont: .script,
-            captionHighlight: true
+            captionHighlight: true,
+            filmStock: .natura
         )
         XCTAssertEqual(result.caption, "hello film")
         XCTAssertEqual(result.captionMode, .custom)
+        XCTAssertEqual(result.filmStock, .natura)
+        XCTAssertGreaterThanOrEqual(result.filmStrength, FilmExpression.minimumStrength)
+        XCTAssertLessThanOrEqual(result.filmStrength, FilmExpression.maximumStrength)
         let png = try XCTUnwrap(UIImage(data: result.polaroidPNG))
         let layout = FrameGeometry.computeFrameLayout()
         XCTAssertEqual(Int(png.size.width), layout.canvasWidth)
@@ -45,7 +52,8 @@ final class PipelineSmokeTests: XCTestCase {
             captionMode: .blank,
             dateFormat: .long,
             customText: "",
-            captionHighlight: false
+            captionHighlight: false,
+            filmStock: .sun660
         )
         let rebaked = try PolaroidPipeline.reburnCaption(
             squareJPEG: first.originalJPEG,
@@ -54,10 +62,14 @@ final class PipelineSmokeTests: XCTestCase {
             customText: "rewritten",
             captionFont: .typewriter,
             captionHighlight: true,
-            date: Date()
+            date: Date(),
+            filmStock: first.filmStock,
+            filmStrength: first.filmStrength
         )
         XCTAssertEqual(rebaked.caption, "rewritten")
         XCTAssertFalse(rebaked.png.isEmpty)
+        XCTAssertEqual(first.filmStock, .sun660)
+        XCTAssertGreaterThanOrEqual(first.filmStrength, FilmExpression.minimumStrength)
     }
 
     func testRenderBackMatchesFrontCanvas() throws {

@@ -56,11 +56,13 @@ final class PolaroidIndexTests: XCTestCase {
             caption: "rewritten",
             captionMode: .custom,
             captionFont: .typewriter,
+            captionFontSize: .large,
             captionHighlight: false
         )
         let updated = PolaroidIndexLogic.find(in: index, id: "a")
         XCTAssertEqual(updated?.caption, "rewritten")
         XCTAssertEqual(updated?.captionFont, .typewriter)
+        XCTAssertEqual(updated?.captionFontSize, .large)
         XCTAssertEqual(updated?.captionHighlight, false)
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "b")?.caption, "new")
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "b")?.backNote, "a longer note on the reverse")
@@ -93,8 +95,11 @@ final class PolaroidIndexTests: XCTestCase {
         let index = PolaroidIndexLogic.parse(raw)
         XCTAssertEqual(index.items.count, 1)
         XCTAssertEqual(index.items[0].captionFont, .serif)
+        XCTAssertEqual(index.items[0].captionFontSize, .medium)
         XCTAssertEqual(index.items[0].captionHighlight, true)
         XCTAssertEqual(index.items[0].backFont, .script)
+        XCTAssertEqual(index.items[0].filmStock, .onestep)
+        XCTAssertEqual(index.items[0].filmStrength, FilmExpression.legacyDefault, accuracy: 0.0001)
         XCTAssertNil(index.items[0].backNote)
     }
 
@@ -144,6 +149,55 @@ final class PolaroidIndexTests: XCTestCase {
     func testParseCorrupt() {
         XCTAssertEqual(PolaroidIndexLogic.parse(nil).items, [])
         XCTAssertEqual(PolaroidIndexLogic.parse("{not json").items, [])
+    }
+
+    func testUnknownFilmStockFallsBackToOnestep() {
+        let raw = """
+        {"version":1,"items":[{"id":"x","createdAt":"2026-08-29T00:00:00.000Z","caption":"hi","captionMode":"date","filmStock":"original-pack"}]}
+        """
+        let index = PolaroidIndexLogic.parse(raw)
+        XCTAssertEqual(index.items.count, 1)
+        XCTAssertEqual(index.items[0].id, "x")
+        XCTAssertEqual(index.items[0].filmStock, .onestep)
+    }
+
+    func testUnknownCaptionFontFallsBack() {
+        let raw = """
+        {"version":1,"items":[{"id":"x","createdAt":"2026-08-29T00:00:00.000Z","caption":"hi","captionMode":"date","captionFont":"comic"}]}
+        """
+        let index = PolaroidIndexLogic.parse(raw)
+        XCTAssertEqual(index.items.count, 1)
+        XCTAssertEqual(index.items[0].captionFont, .serif)
+    }
+
+    func testLenientParseKeepsGoodRowsWhenOneIsBroken() {
+        // Second item is not an object — whole-index decode fails; lenient path keeps the first.
+        let raw = """
+        {"version":1,"items":[{"id":"good","createdAt":"2026-08-29T00:00:00.000Z","caption":"hi","captionMode":"date"},42]}
+        """
+        let index = PolaroidIndexLogic.parse(raw)
+        XCTAssertEqual(index.items.map(\.id), ["good"])
+    }
+
+    func testRecoverMissingRecordsFromDiskFolders() {
+        let existing = [
+            PolaroidRecord(
+                id: "a",
+                createdAt: "2026-01-01T00:00:00.000Z",
+                caption: "kept",
+                captionMode: .custom
+            ),
+        ]
+        let recovered = PolaroidIndexLogic.recoverMissingRecords(
+            existing: existing,
+            folderIDsWithPNG: [
+                (id: "a", createdAt: "2026-01-01T00:00:00.000Z"),
+                (id: "orphan", createdAt: "2026-08-29T00:00:00.000Z"),
+            ]
+        )
+        XCTAssertEqual(recovered.map(\.id), ["orphan", "a"])
+        XCTAssertEqual(recovered.first?.captionMode, .blank)
+        XCTAssertEqual(recovered.first?.filmStock, .onestep)
     }
 
     func testPrintRouteSources() {

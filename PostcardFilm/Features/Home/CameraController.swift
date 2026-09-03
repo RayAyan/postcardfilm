@@ -41,17 +41,20 @@ final class CameraController: NSObject, ObservableObject {
     }
 
     @Published var permission: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @Published var position: AVCaptureDevice.Position = .back
+    @Published private(set) var position: AVCaptureDevice.Position = .back
     @Published var flashMode: FlashMode = .off
     @Published var isSessionRunning = false
     @Published var lastError: String?
     @Published private(set) var isConfigured = false
+    /// True while an input swap is in flight — flip control should stay disabled.
+    @Published private(set) var isSwitchingCamera = false
 
     // Session graph is mutated on `sessionQueue`; mark unsafe for MainActor isolation.
     nonisolated(unsafe) let session = AVCaptureSession()
     nonisolated(unsafe) private let photoOutput = AVCapturePhotoOutput()
     private var captureContinuation: CheckedContinuation<UIImage, Error>?
     private let sessionQueue = DispatchQueue(label: "com.postcardpolaroid.camera")
+    private var interruptionObserver: NSObjectProtocol?
 
     /// True when photo capture can safely be called (live video connection).
     var canCapturePhoto: Bool {
@@ -73,24 +76,28 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
-    func configureAndStart() async {
-        let position = self.position
+    func configureAndStart(position: AVCaptureDevice.Position? = nil) async {
+        let target = position ?? self.position
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             sessionQueue.async { [weak self] in
                 guard let self else {
                     continuation.resume()
                     return
                 }
-                self.configureSessionLocked(position: position)
+                self.configureSessionLocked(position: target)
                 if !self.session.isRunning {
                     self.session.startRunning()
                 }
                 let running = self.session.isRunning
                 Task { @MainActor in
+                    // Publish facing only after the new input is live so preview
+                    // never mirrors/unmirrors the *previous* camera mid-switch.
+                    self.position = target
                     self.isConfigured = true
                     self.isSessionRunning = running
+                    self.observeInterruptionEnded()
+                    continuation.resume()
                 }
-                continuation.resume()
             }
         }
     }
@@ -133,6 +140,31 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
+    /// Restart after background / session interruption without rebuilding the graph when possible.
+    func resume() async {
+        guard permission == .authorized else { return }
+        if isConfigured {
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                sessionQueue.async { [weak self] in
+                    guard let self else {
+                        continuation.resume()
+                        return
+                    }
+                    if !self.session.isRunning {
+                        self.session.startRunning()
+                    }
+                    let running = self.session.isRunning
+                    Task { @MainActor in
+                        self.isSessionRunning = running
+                        continuation.resume()
+                    }
+                }
+            }
+        } else {
+            await configureAndStart()
+        }
+    }
+
     func stop() {
         sessionQueue.async { [weak self] in
             guard let self, self.session.isRunning else { return }
@@ -142,12 +174,30 @@ final class CameraController: NSObject, ObservableObject {
     }
 
     func flipCamera() {
-        position = position == .back ? .front : .back
-        Task { await configureAndStart() }
+        guard !isSwitchingCamera else { return }
+        let next = CameraFacing.toggled(position)
+        isSwitchingCamera = true
+        Task {
+            await configureAndStart(position: next)
+            isSwitchingCamera = false
+        }
     }
 
     func cycleFlash() {
         flashMode = flashMode.next()
+    }
+
+    private func observeInterruptionEnded() {
+        guard interruptionObserver == nil else { return }
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVCaptureSession.interruptionEndedNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                await self?.resume()
+            }
+        }
     }
 
     func takePhoto() async throws -> UIImage {
@@ -267,7 +317,11 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
                 finishCapture(throwing: CameraError.decodeFailed)
                 return
             }
-            finishCapture(returning: image)
+            // Front camera: match mirrored preview (WYSIWYG selfie).
+            let output = CameraFacing.shouldMirrorPreview(for: self.position)
+                ? image.flippedHorizontally()
+                : image
+            finishCapture(returning: output)
         }
     }
 }

@@ -8,6 +8,7 @@ struct AppSettings: Equatable {
     var customDefault: String = ""
     var saveOnCapture: Bool = false
     var captionFont: CaptionFont = .serif
+    var captionFontSize: CaptionFontSize = .medium
     var captionHighlight: Bool = true
 
     static let `default` = AppSettings()
@@ -56,6 +57,7 @@ private struct StoredSettings: Codable {
     var customDefault: String
     var saveOnCapture: Bool
     var captionFont: String?
+    var captionFontSize: String?
     var captionHighlight: Bool?
 
     init(from settings: AppSettings) {
@@ -65,6 +67,7 @@ private struct StoredSettings: Codable {
         customDefault = settings.customDefault
         saveOnCapture = settings.saveOnCapture
         captionFont = settings.captionFont.rawValue
+        captionFontSize = settings.captionFontSize.rawValue
         captionHighlight = settings.captionHighlight
     }
 
@@ -76,8 +79,16 @@ private struct StoredSettings: Codable {
             customDefault: customDefault,
             saveOnCapture: saveOnCapture,
             captionFont: CaptionFont(rawValue: captionFont ?? "") ?? .serif,
+            captionFontSize: CaptionFontSize(rawValue: captionFontSize ?? "") ?? .medium,
             captionHighlight: captionHighlight ?? true
         )
+    }
+}
+
+extension AppSettings {
+    /// Decode persisted settings JSON (used by tests for missing-key defaults).
+    static func fromStoredJSON(_ data: Data) throws -> AppSettings {
+        try JSONDecoder().decode(StoredSettings.self, from: data).asAppSettings()
     }
 }
 

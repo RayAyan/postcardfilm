@@ -68,8 +68,8 @@ swift Scripts/verify_logic.swift
 
 ## Versioning
 
-- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) and `Info.plist` (`1.0.0` / `1`)
-- Shown in Settings footer as `postcardfilm. 1.0.0`
+- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) and `Info.plist` (`1.1.0` / `2`)
+- Shown in Settings footer as `postcardfilm. 1.1.0`
 - Strategy (semver, What’s New voice, cut checklist): [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md)
 - Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md)
 

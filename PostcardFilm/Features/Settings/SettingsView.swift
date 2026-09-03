@@ -57,6 +57,21 @@ struct SettingsView: View {
             }
 
             Section {
+                ForEach(CaptionFontSize.allCases) { size in
+                    checkRow(
+                        title: size.label,
+                        selected: settingsStore.settings.captionFontSize == size
+                    ) {
+                        settingsStore.update { $0.captionFontSize = size }
+                    }
+                }
+            } header: {
+                Text("size")
+                    .font(AppType.caption(12))
+                    .appChromeText()
+            }
+
+            Section {
                 ForEach(DateFormatOption.allCases) { format in
                     let sample = Caption.formatDate(
                         Date(),

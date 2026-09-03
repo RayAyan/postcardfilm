@@ -76,7 +76,9 @@ enum ScreenshotHarness {
                 customText: sample.caption ?? "",
                 captionFont: sample.font,
                 captionHighlight: sample.highlight,
-                date: date
+                date: date,
+                filmStock: .onestep,
+                serendipitySeed: String(format: "seed-%02d", offset)
             ) else { continue }
 
             let id = String(format: "seed-%02d", offset)
@@ -106,7 +108,8 @@ enum ScreenshotHarness {
                     captionFont: sample.font,
                     captionHighlight: sample.highlight,
                     backNote: backNote,
-                    backFont: sample.font
+                    backFont: sample.font,
+                    filmStock: .onestep
                 )
             )
         }

@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var store: PolaroidStore
     @EnvironmentObject private var settingsStore: SettingsStore
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var camera = CameraController()
 
     @State private var path = NavigationPath()
@@ -69,6 +70,10 @@ struct HomeView: View {
                 if usesCamera, camera.permission == .authorized {
                     Task { await camera.configureAndStart() }
                 }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard usesCamera, phase == .active, camera.permission == .authorized else { return }
+                Task { await camera.resume() }
             }
         }
     }
@@ -168,12 +173,6 @@ struct HomeView: View {
                     .fill(AppTheme.surfaceRaised)
                 preview
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                if capturing {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.25))
-                    ProgressView()
-                        .tint(.white)
-                }
             }
             .frame(width: side, height: side)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -205,9 +204,10 @@ struct HomeView: View {
                     .frame(width: AppTheme.hitTarget, height: AppTheme.hitTarget)
             }
             .accessibilityLabel("Flip camera")
-            .disabled(capturing)
+            .disabled(capturing || camera.isSwitchingCamera)
 
             Button {
+                // Fire immediately on press — flash/pipeline stay silent after this click.
                 Haptics.shutter()
                 Task { await capture() }
             } label: {
@@ -281,12 +281,20 @@ struct HomeView: View {
 
     private func capture() async {
         guard !capturing else { return }
+        capturing = true
+        let id = UUID().uuidString
+        var didPush = false
 
         if !reduceMotion {
             withAnimation(.easeOut(duration: 0.06)) {
                 shutterPressed = true
                 shutterFlash = true
             }
+        }
+
+        async let photoWork = camera.takePhoto()
+
+        if !reduceMotion {
             try? await Task.sleep(nanoseconds: 90_000_000)
             withAnimation(.easeIn(duration: 0.12)) {
                 shutterFlash = false
@@ -294,9 +302,11 @@ struct HomeView: View {
             }
         }
 
-        capturing = true
+        path.append(PrintRoute.captured(id: id))
+        didPush = true
+
         do {
-            let photo = try await camera.takePhoto()
+            let photo = try await photoWork
             let settings = settingsStore.settings
             let processed = try await Task.detached(priority: .userInitiated) {
                 try PolaroidPipeline.processCapture(
@@ -306,23 +316,30 @@ struct HomeView: View {
                     dateCase: settings.dateCase,
                     customText: settings.customDefault,
                     captionFont: settings.captionFont,
-                    captionHighlight: settings.captionHighlight
+                    captionFontSize: settings.captionFontSize,
+                    captionHighlight: settings.captionHighlight,
+                    serendipitySeed: id
                 )
             }.value
-            let id = UUID().uuidString
             try store.create(
                 id: id,
                 caption: processed.caption,
                 captionMode: processed.captionMode,
                 captionFont: settings.captionFont,
+                captionFontSize: settings.captionFontSize,
                 captionHighlight: settings.captionHighlight,
+                filmStock: processed.filmStock,
+                filmStrength: processed.filmStrength,
                 originalJPEG: processed.originalJPEG,
                 polaroidPNG: processed.polaroidPNG
             )
-
             capturing = false
-            path.append(PrintRoute.captured(id: id))
         } catch {
+            if didPush, !path.isEmpty {
+                path.removeLast()
+            }
+            shutterFlash = false
+            shutterPressed = false
             capturing = false
             captureError = error.localizedDescription
             showCaptureAlert = true

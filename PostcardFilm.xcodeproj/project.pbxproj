@@ -11,16 +11,20 @@
 		0BEE7D52F68013A2C23B52E7 /* GallerySelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA9CEE8FDC1487A4D26BF28 /* GallerySelectionTests.swift */; };
 		0D7EF4DF94656BB180B67BAA /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A85D9AD9B0F65CA62DBE0DA /* CameraPreviewView.swift */; };
 		0E7BE3EF632743B92AC84889 /* PolaroidRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E1A70A27EE6D0AC2E9529F0 /* PolaroidRecord.swift */; };
+		138325BA949347B1DF6BF523 /* FilmStocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86A75932165DE52FC0E7E784 /* FilmStocks.swift */; };
 		15DE34E5A95CBA1B69F7E1A3 /* GallerySelectionLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F3E008AE07A53E1B85C60 /* GallerySelectionLogic.swift */; };
 		19D1515D44A256D95489D649 /* PhotoLibrarySaver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3549F5A820F0F14DDE7BD22 /* PhotoLibrarySaver.swift */; };
 		1FC8029C0BF7A02F716BD2F0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AC4C9FD190A4453A9C2E4015 /* PrivacyInfo.xcprivacy */; };
 		2062198732D4DE1E8F159272 /* FrameGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1585BDE1221BAEFC850EE90 /* FrameGeometry.swift */; };
+		20F1A52A1157BC3D32240256 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72033184223170A451FD8D38 /* ThumbnailCache.swift */; };
+		23D0C6EAF2EEB5EEB81A1CA2 /* UIImage+Flip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12592FD1C80BF7640D93A6BA /* UIImage+Flip.swift */; };
 		2455151CAEB083655F456CD4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BAE237F5168DF700594E416E /* Assets.xcassets */; };
 		2462B7CA9CE68C19B902E5E4 /* PolaroidPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */; };
 		29EBB292B870953EBCC9A81D /* Wordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4821F8DA735BD6099D53F11 /* Wordmark.swift */; };
 		39495DE8E84A1B19BF451787 /* BrandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1305512C562B4F455C668D2 /* BrandTests.swift */; };
 		394BBEBAB89445331663F7DD /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D83192A290DD9FBC19FA173 /* Typography.swift */; };
 		42757D3944817874E9E6C4C3 /* CaptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0802F8E0747FDBF63329BE50 /* CaptionTests.swift */; };
+		469D06A28A4EF2EF54F1117C /* FilmStockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A5FCB1B3E7707AE43AC6D3 /* FilmStockTests.swift */; };
 		4714E9B28456705FB99E5B29 /* PolaroidIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDE69D45CE4F6446C6698EC /* PolaroidIndexTests.swift */; };
 		4A934DC2D0592DA72F8F90B2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4F6459B9F2C67B2933D9A3 /* HomeView.swift */; };
 		4E6790684CAB022573B05A1B /* GradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */; };
@@ -33,9 +37,12 @@
 		B2E2DB606DEDF7D35DD9CDE9 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BEB36F8D1AF367914C91878 /* Haptics.swift */; };
 		B7BD84B6AB08C8E91727084B /* ScreenshotHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106DDE171243F2F9161E899F /* ScreenshotHarness.swift */; };
 		B83813D91D91394DCC560CF3 /* Grade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB6F219B74F23624AFD42FB /* Grade.swift */; };
+		C7A68095BD6A91BA1CB6F690 /* CameraFacingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3406F7B4E95F5B540CD97062 /* CameraFacingTests.swift */; };
 		CA5678033992F55037B58B93 /* ProcessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF748D9FFACD3A5F2665D0C /* ProcessView.swift */; };
 		CB4F4AA69CE72E84906AACE0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13653ABFB0E3BD5894CF779 /* ContentView.swift */; };
 		CDECEA175C49C507213CB11A /* CustomCaptionPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA0154A64A191CA8FE79D0F /* CustomCaptionPrompt.swift */; };
+		D34945CDD65CCA7C08E0A859 /* CameraFacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767009032368D2F479037197 /* CameraFacing.swift */; };
+		D94B64DE1F232CFD94533792 /* ActivityShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA900ED980F18006F9B03D06 /* ActivityShareSheet.swift */; };
 		DACCEEF2A9967DA9096DB495 /* FrameGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */; };
 		DBE0BD86F2F5D32D67030BE8 /* Caveat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AF24128EFD61AC3495B3DECB /* Caveat-Regular.ttf */; };
 		DC30EBB4B197F46AE181CB96 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F181D5CF10DA14F1DCE47AB4 /* CameraController.swift */; };
@@ -60,23 +67,30 @@
 		024F3E008AE07A53E1B85C60 /* GallerySelectionLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GallerySelectionLogic.swift; sourceTree = "<group>"; };
 		0802F8E0747FDBF63329BE50 /* CaptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionTests.swift; sourceTree = "<group>"; };
 		106DDE171243F2F9161E899F /* ScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotHarness.swift; sourceTree = "<group>"; };
+		12592FD1C80BF7640D93A6BA /* UIImage+Flip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Flip.swift"; sourceTree = "<group>"; };
 		2A85D9AD9B0F65CA62DBE0DA /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeTests.swift; sourceTree = "<group>"; };
+		3406F7B4E95F5B540CD97062 /* CameraFacingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFacingTests.swift; sourceTree = "<group>"; };
 		35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidPipeline.swift; sourceTree = "<group>"; };
 		3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopingOverlay.swift; sourceTree = "<group>"; };
 		4853155333BACE3BF457B487 /* PolaroidStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidStore.swift; sourceTree = "<group>"; };
 		6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameGeometryTests.swift; sourceTree = "<group>"; };
 		67EB27F71283A07BFB6021B2 /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
+		72033184223170A451FD8D38 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
+		767009032368D2F479037197 /* CameraFacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFacing.swift; sourceTree = "<group>"; };
 		79F46352101568F853C156E4 /* PostcardFilmApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostcardFilmApp.swift; sourceTree = "<group>"; };
 		7BEB36F8D1AF367914C91878 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		7D83192A290DD9FBC19FA173 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		7FAB137149E429A899330FD1 /* PostcardFilmTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PostcardFilmTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8041579F5DD10B8DCC2B6ECD /* PostcardFilm.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PostcardFilm.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		86A75932165DE52FC0E7E784 /* FilmStocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmStocks.swift; sourceTree = "<group>"; };
 		88B05F695A2D9B155900F86C /* AppSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsTests.swift; sourceTree = "<group>"; };
 		8DB6F219B74F23624AFD42FB /* Grade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grade.swift; sourceTree = "<group>"; };
 		8F9EA96CA963893E19F0BE8E /* PipelineSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineSmokeTests.swift; sourceTree = "<group>"; };
+		93A5FCB1B3E7707AE43AC6D3 /* FilmStockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmStockTests.swift; sourceTree = "<group>"; };
 		9E1A70A27EE6D0AC2E9529F0 /* PolaroidRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidRecord.swift; sourceTree = "<group>"; };
 		A1585BDE1221BAEFC850EE90 /* FrameGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameGeometry.swift; sourceTree = "<group>"; };
+		AA900ED980F18006F9B03D06 /* ActivityShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityShareSheet.swift; sourceTree = "<group>"; };
 		AC4C9FD190A4453A9C2E4015 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ACF748D9FFACD3A5F2665D0C /* ProcessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessView.swift; sourceTree = "<group>"; };
 		AD86F83C273CEEFE6C844661 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
@@ -117,7 +131,9 @@
 			children = (
 				88B05F695A2D9B155900F86C /* AppSettingsTests.swift */,
 				C1305512C562B4F455C668D2 /* BrandTests.swift */,
+				3406F7B4E95F5B540CD97062 /* CameraFacingTests.swift */,
 				0802F8E0747FDBF63329BE50 /* CaptionTests.swift */,
+				93A5FCB1B3E7707AE43AC6D3 /* FilmStockTests.swift */,
 				6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */,
 				AEA9CEE8FDC1487A4D26BF28 /* GallerySelectionTests.swift */,
 				3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */,
@@ -168,6 +184,7 @@
 			isa = PBXGroup;
 			children = (
 				F181D5CF10DA14F1DCE47AB4 /* CameraController.swift */,
+				767009032368D2F479037197 /* CameraFacing.swift */,
 				2A85D9AD9B0F65CA62DBE0DA /* CameraPreviewView.swift */,
 				3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */,
 				DA4F6459B9F2C67B2933D9A3 /* HomeView.swift */,
@@ -178,7 +195,10 @@
 		4AC7351BA37D0FAA0EF92A9A /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				AA900ED980F18006F9B03D06 /* ActivityShareSheet.swift */,
 				7BEB36F8D1AF367914C91878 /* Haptics.swift */,
+				72033184223170A451FD8D38 /* ThumbnailCache.swift */,
+				12592FD1C80BF7640D93A6BA /* UIImage+Flip.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -242,6 +262,7 @@
 			isa = PBXGroup;
 			children = (
 				D15DA5C450CB663051C3DC9E /* Caption.swift */,
+				86A75932165DE52FC0E7E784 /* FilmStocks.swift */,
 				A1585BDE1221BAEFC850EE90 /* FrameGeometry.swift */,
 				8DB6F219B74F23624AFD42FB /* Grade.swift */,
 				35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */,
@@ -369,15 +390,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D94B64DE1F232CFD94533792 /* ActivityShareSheet.swift in Sources */,
 				FDF2A15D7446A0D86C3B4759 /* AppSettings.swift in Sources */,
 				5AFE4392C5788988DBCA94AC /* Brand.swift in Sources */,
 				DC30EBB4B197F46AE181CB96 /* CameraController.swift in Sources */,
+				D34945CDD65CCA7C08E0A859 /* CameraFacing.swift in Sources */,
 				0D7EF4DF94656BB180B67BAA /* CameraPreviewView.swift in Sources */,
 				816038252BA46C094DCC5C46 /* Caption.swift in Sources */,
 				04C7C3B10DB7A5F8887C87FD /* Colors.swift in Sources */,
 				CB4F4AA69CE72E84906AACE0 /* ContentView.swift in Sources */,
 				CDECEA175C49C507213CB11A /* CustomCaptionPrompt.swift in Sources */,
 				8D44A51ED13AEF18A43BD43C /* DevelopingOverlay.swift in Sources */,
+				138325BA949347B1DF6BF523 /* FilmStocks.swift in Sources */,
 				2062198732D4DE1E8F159272 /* FrameGeometry.swift in Sources */,
 				15DE34E5A95CBA1B69F7E1A3 /* GallerySelectionLogic.swift in Sources */,
 				676DAE89BEA872E253FC2156 /* GalleryView.swift in Sources */,
@@ -392,7 +416,9 @@
 				CA5678033992F55037B58B93 /* ProcessView.swift in Sources */,
 				B7BD84B6AB08C8E91727084B /* ScreenshotHarness.swift in Sources */,
 				79F4AAD5B300E0EB0649C18B /* SettingsView.swift in Sources */,
+				20F1A52A1157BC3D32240256 /* ThumbnailCache.swift in Sources */,
 				394BBEBAB89445331663F7DD /* Typography.swift in Sources */,
+				23D0C6EAF2EEB5EEB81A1CA2 /* UIImage+Flip.swift in Sources */,
 				29EBB292B870953EBCC9A81D /* Wordmark.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -403,7 +429,9 @@
 			files = (
 				DC9043D2ACFC9E3881BDC7FA /* AppSettingsTests.swift in Sources */,
 				39495DE8E84A1B19BF451787 /* BrandTests.swift in Sources */,
+				C7A68095BD6A91BA1CB6F690 /* CameraFacingTests.swift in Sources */,
 				42757D3944817874E9E6C4C3 /* CaptionTests.swift in Sources */,
+				469D06A28A4EF2EF54F1117C /* FilmStockTests.swift in Sources */,
 				DACCEEF2A9967DA9096DB495 /* FrameGeometryTests.swift in Sources */,
 				0BEE7D52F68013A2C23B52E7 /* GallerySelectionTests.swift in Sources */,
 				4E6790684CAB022573B05A1B /* GradeTests.swift in Sources */,
@@ -513,7 +541,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -526,7 +554,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -594,7 +622,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -613,7 +641,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

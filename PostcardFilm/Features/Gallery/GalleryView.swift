@@ -10,6 +10,8 @@ struct GalleryView: View {
     @State private var showDeleteConfirm = false
     @State private var alertMessage: String?
     @State private var showAlert = false
+    @State private var showPhotosDenied = false
+    @State private var isDownloading = false
     /// Blocks the tap that follows a long-press so Process does not open.
     @State private var suppressOpen = false
 
@@ -76,11 +78,23 @@ struct GalleryView: View {
         }
         .background(AppTheme.surface.ignoresSafeArea())
         .navigationTitle(isSelecting ? selectedTitle : "gallery")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(isSelecting ? .inline : .large)
         .toolbar { toolbarContent }
-        .confirmationDialog(deleteTitle, isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+        .confirmationDialog("are you sure?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("delete", role: .destructive) { performDelete() }
             Button("cancel", role: .cancel) {}
+        } message: {
+            Text(deleteMessage)
+        }
+        .alert("photos access is off", isPresented: $showPhotosDenied) {
+            Button("cancel", role: .cancel) {}
+            Button("open settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("allow adding photos so prints can be saved to your library.")
         }
         .alert("something went wrong", isPresented: $showAlert) {
             Button("ok", role: .cancel) {}
@@ -101,7 +115,7 @@ struct GalleryView: View {
         selectedIDs.isEmpty ? "select" : "\(selectedIDs.count) selected"
     }
 
-    private var deleteTitle: String {
+    private var deleteMessage: String {
         let n = selectedIDs.count
         return n == 1 ? "delete this print?" : "delete \(n) prints?"
     }
@@ -111,29 +125,37 @@ struct GalleryView: View {
         if isSelecting {
             ToolbarItem(placement: .topBarLeading) {
                 Button(allSelected ? "deselect all" : "select all") {
-                    if allSelected {
-                        selectedIDs.removeAll()
-                    } else {
-                        selectedIDs = GallerySelectionLogic.selectAll(ids: store.items.map(\.id))
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        if allSelected {
+                            selectedIDs.removeAll()
+                        } else {
+                            selectedIDs = GallerySelectionLogic.selectAll(ids: store.items.map(\.id))
+                        }
                     }
                 }
                 .font(AppType.body(17))
                 .appChromeText()
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button("delete", role: .destructive) {
+                Button {
                     showDeleteConfirm = true
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(AppTheme.destructive)
                 }
-                .font(AppType.body(17, weight: .semibold))
-                .appChromeText()
-                .disabled(selectedIDs.isEmpty)
+                .accessibilityLabel("delete")
+                .disabled(selectedIDs.isEmpty || isDownloading)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button("cancel") {
-                    exitSelection()
+                Button {
+                    Task { await performDownload() }
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 17, weight: .semibold))
                 }
-                .font(AppType.body(17))
-                .appChromeText()
+                .accessibilityLabel("download")
+                .disabled(selectedIDs.isEmpty || isDownloading)
             }
         } else if !store.items.isEmpty {
             ToolbarItem(placement: .topBarTrailing) {
@@ -155,6 +177,19 @@ struct GalleryView: View {
             mode: .gridFill,
             aspect: cellAspect
         )
+        .overlay {
+            if isSelecting, selected {
+                AppTheme.accentFill.opacity(0.22)
+                    .allowsHitTesting(false)
+            }
+        }
+        .overlay {
+            if isSelecting, selected {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .strokeBorder(AppTheme.accentFill, lineWidth: 2.5)
+                    .allowsHitTesting(false)
+            }
+        }
         .overlay(alignment: .topTrailing) {
             if isSelecting {
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
@@ -165,15 +200,17 @@ struct GalleryView: View {
                         selected ? AppTheme.accentFill : Color.black.opacity(0.35)
                     )
                     .padding(6)
+                    .allowsHitTesting(false)
             }
         }
         .contentShape(Rectangle())
         .accessibilityLabel(galleryLabel(for: item))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .animation(.easeOut(duration: 0.12), value: selected)
 
         if isSelecting {
             Button {
-                selectedIDs = GallerySelectionLogic.toggle(item.id, in: selectedIDs)
+                toggleSelection(item.id)
             } label: {
                 thumb
             }
@@ -199,10 +236,19 @@ struct GalleryView: View {
                             selecting: isSelecting,
                             selected: selectedIDs
                         )
-                        isSelecting = result.selecting
-                        selectedIDs = result.selected
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            isSelecting = result.selecting
+                            selectedIDs = result.selected
+                        }
                     }
             )
+        }
+    }
+
+    private func toggleSelection(_ id: String) {
+        Haptics.lightTap()
+        withAnimation(.easeOut(duration: 0.12)) {
+            selectedIDs = GallerySelectionLogic.toggle(id, in: selectedIDs)
         }
     }
 
@@ -227,11 +273,34 @@ struct GalleryView: View {
 
     private func performDelete() {
         let ids = Array(selectedIDs)
+        for id in ids {
+            ThumbnailCache.invalidate(url: store.polaroidURL(for: id))
+        }
         do {
             try store.delete(ids: ids)
             exitSelection()
         } catch {
             alertMessage = error.localizedDescription
+            showAlert = true
+        }
+    }
+
+    @MainActor
+    private func performDownload() async {
+        guard !isDownloading, !selectedIDs.isEmpty else { return }
+        isDownloading = true
+        defer { isDownloading = false }
+
+        let urls = selectedIDs.map { store.polaroidURL(for: $0) }
+        let result = await PhotoLibrarySaver.saveImages(at: urls)
+        switch result {
+        case .saved:
+            Haptics.success()
+            exitSelection()
+        case .denied:
+            showPhotosDenied = true
+        case .failed(let message):
+            alertMessage = message
             showAlert = true
         }
     }
@@ -250,7 +319,7 @@ struct PolaroidThumb: View {
 
     var body: some View {
         Group {
-            if let image = UIImage(contentsOfFile: url.path) {
+            if let image = ThumbnailCache.image(at: url, refreshToken: refreshToken) {
                 switch mode {
                 case .fit:
                     Image(uiImage: image)

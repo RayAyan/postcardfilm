@@ -27,6 +27,21 @@ final class CaptionTests: XCTestCase {
         XCTAssertEqual(Caption.formatDate(sample, format: .long), "29 aug 2026")
     }
 
+    func testLongDateZeroPadsSingleDigitDay() {
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 1
+        comps.day = 3
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        let early = cal.date(from: comps)!
+        XCTAssertEqual(Caption.formatDate(early, format: .long), "03 jan 2026")
+        XCTAssertEqual(
+            Caption.formatDate(early, format: .long, letterCase: .sentence),
+            "03 Jan 2026"
+        )
+    }
+
     func testDateCaseDefaultIsLowercase() {
         XCTAssertEqual(DateCaseStyle.lowercase.label, "lowercase")
         XCTAssertEqual(DateCaseStyle.sentence.label, "sentence case")

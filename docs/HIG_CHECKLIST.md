@@ -26,7 +26,7 @@ Walk this on a **physical iPhone** before calling a release done.
 - [ ] Delete uses confirmation dialog (destructive) on Process; Gallery has Select toolbar + long-press select / select all / batch delete
 - [ ] No share sheet on Process
 - [ ] Download saves only the visible face (front, or back when a note exists)
-- [ ] Settings uses inset grouped list (checkmarks + Toggle); no highlight toggle
+- [ ] Settings uses inset grouped list (checkmarks + Toggle); no highlight toggle (Process has per-print highlighter)
 - [ ] SF Symbols for actions; chrome labels are serif small-caps
 
 ## Accessibility

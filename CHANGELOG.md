@@ -14,9 +14,33 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Added
 
+- **the pack** — five camera-named film stocks (`onestep` / Original, `sun660`, `mini9`, `natura`, `m6`); at shutter the app draws one at random; user never chooses; stock persisted so reburn keeps the emulsion
+- Adaptive film expression — invisible per-print strength (~65% gentle / ~25% medium / ~10% bold) softens harsh knobs while keeping stock color identity; Original stays frozen; strength persisted for reburn
+- Process highlighter toggle (bottom left) to add/remove caption highlight on a print
+- Strip caption size default (small / medium / large) in Settings + per-print in Process
+- Gallery multi-download in select mode
+- Process share via the system share sheet (visible face)
+
 ### Changed
 
+- Pack stocks pushed apart with hard tone roles (bright flash / punchy Instax / flat Fuji / dense Leica); Original (`onestep`) stays the frozen 1.0.0 look
+- Pack softened toward real Polaroid (muted contrast, subtler flash fill, soft grain + edge burn, per-print serendipity); Original still frozen
+- Pack pulled closer to Original — less contrast/crush/flash/vignette; color cousins kept; Original still frozen
+- Calibration is three layers: scene adaptation → stock identity → weighted expression (plus scaled serendipity)
+- Capture haptics: punchy shutter + rising develop pulses + strong reveal settle
+- Capture haptics: shutter on press; rising develop pulses across ~4.5s Polaroid fade; reveal thump when milk clears
+- Capture transition: quick shutter flash → postcard milk → “developing…” 1.5s → 3s slow print fade-in (no wipe)
+- Camera preview resumes after backgrounding / session interruption
+- Process download icon optically aligned with share/trash
+- Process highlighter always visible; yellow chip when on
+- Long dates zero-pad the day (`03 jan 2026`)
+- Gallery select uses an inline title (no truncated “S…”) and caches thumbs for smoother scroll
+- Front camera preview and capture are mirrored (WYSIWYG selfie)
+
 ### Fixed
+
+- Camera flip no longer unmirrors the current preview before switching; selfie preview/capture stay mirrored, rear does not
+- Gallery restores prints still on disk when `index.json` fails to decode or omits folders (unknown film/font values no longer empty the gallery)
 
 ### Removed
 

@@ -33,11 +33,54 @@ final class PolaroidStore: ObservableObject {
     }
 
     func reload() {
-        items = readIndex().items
+        var index = readIndex()
+        let repaired = repairIndexFromDisk(index)
+        if repaired.items.map(\.id) != index.items.map(\.id) {
+            index = repaired
+            try? writeIndex(index)
+        }
+        items = index.items
+    }
+
+    /// If index.json is empty/corrupt but print folders still exist, bring them back.
+    private func repairIndexFromDisk(_ index: PolaroidIndex) -> PolaroidIndex {
+        let diskEntries = scanPrintFolders()
+        guard !diskEntries.isEmpty else { return index }
+        let merged = PolaroidIndexLogic.recoverMissingRecords(
+            existing: index.items,
+            folderIDsWithPNG: diskEntries
+        )
+        return PolaroidIndex(version: 1, items: merged)
+    }
+
+    /// Folders under Documents/polaroids that still have a polaroid.png.
+    private func scanPrintFolders() -> [(id: String, createdAt: String)] {
+        guard fileManager.fileExists(atPath: rootURL.path),
+              let urls = try? fileManager.contentsOfDirectory(
+                  at: rootURL,
+                  includingPropertiesForKeys: [.isDirectoryKey, .contentModificationDateKey],
+                  options: [.skipsHiddenFiles]
+              )
+        else {
+            return []
+        }
+
+        var found: [(id: String, createdAt: String)] = []
+        for url in urls {
+            let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .contentModificationDateKey])
+            guard values?.isDirectory == true else { continue }
+            let id = url.lastPathComponent
+            guard id != "index.json" else { continue }
+            let png = polaroidURL(for: id)
+            guard fileManager.fileExists(atPath: png.path) else { continue }
+            let date = values?.contentModificationDate ?? Date()
+            found.append((id: id, createdAt: Caption.isoString(from: date)))
+        }
+        return found
     }
 
     func polaroid(id: String) -> PolaroidRecord? {
-        PolaroidIndexLogic.find(in: readIndex(), id: id)
+        PolaroidIndexLogic.find(in: loadIndex(), id: id)
     }
 
     @discardableResult
@@ -46,8 +89,11 @@ final class PolaroidStore: ObservableObject {
         caption: String,
         captionMode: CaptionMode,
         captionFont: CaptionFont = .serif,
+        captionFontSize: CaptionFontSize = .medium,
         captionHighlight: Bool = true,
         backNote: String? = nil,
+        filmStock: FilmStock = .onestep,
+        filmStrength: Double = FilmExpression.legacyDefault,
         originalJPEG: Data,
         polaroidPNG: Data,
         backPNG: Data? = nil
@@ -72,10 +118,13 @@ final class PolaroidStore: ObservableObject {
             caption: caption,
             captionMode: captionMode,
             captionFont: captionFont,
+            captionFontSize: captionFontSize,
             captionHighlight: captionHighlight,
-            backNote: trimmedBack
+            backNote: trimmedBack,
+            filmStock: filmStock,
+            filmStrength: filmStrength
         )
-        var index = readIndex()
+        var index = loadIndex()
         index = PolaroidIndexLogic.add(to: index, record: record)
         try writeIndex(index)
         items = index.items
@@ -87,7 +136,7 @@ final class PolaroidStore: ObservableObject {
         if fileManager.fileExists(atPath: dir.path) {
             try fileManager.removeItem(at: dir)
         }
-        var index = readIndex()
+        var index = loadIndex()
         index = PolaroidIndexLogic.remove(from: index, id: id)
         try writeIndex(index)
         items = index.items
@@ -95,7 +144,7 @@ final class PolaroidStore: ObservableObject {
 
     func delete(ids: [String]) throws {
         guard !ids.isEmpty else { return }
-        var index = readIndex()
+        var index = loadIndex()
         for id in ids {
             let dir = directoryURL(for: id)
             if fileManager.fileExists(atPath: dir.path) {
@@ -112,17 +161,19 @@ final class PolaroidStore: ObservableObject {
         caption: String,
         captionMode: CaptionMode,
         captionFont: CaptionFont,
+        captionFontSize: CaptionFontSize,
         captionHighlight: Bool,
         polaroidPNG: Data
     ) throws {
         try polaroidPNG.write(to: polaroidURL(for: id), options: .atomic)
-        var index = readIndex()
+        var index = loadIndex()
         index = PolaroidIndexLogic.updateCaption(
             in: index,
             id: id,
             caption: caption,
             captionMode: captionMode,
             captionFont: captionFont,
+            captionFontSize: captionFontSize,
             captionHighlight: captionHighlight
         )
         try writeIndex(index)
@@ -143,7 +194,7 @@ final class PolaroidStore: ObservableObject {
         } else {
             try? fileManager.removeItem(at: backURL(for: id))
         }
-        var index = readIndex()
+        var index = loadIndex()
         index = PolaroidIndexLogic.updateBackNote(
             in: index,
             id: id,
@@ -160,6 +211,7 @@ final class PolaroidStore: ObservableObject {
         }
     }
 
+    /// Raw index.json read — may be empty if corrupt.
     private func readIndex() -> PolaroidIndex {
         guard let data = try? Data(contentsOf: indexURL),
               let raw = String(data: data, encoding: .utf8)
@@ -167,6 +219,11 @@ final class PolaroidStore: ObservableObject {
             return .empty
         }
         return PolaroidIndexLogic.parse(raw)
+    }
+
+    /// Index merged with any on-disk print folders still present.
+    private func loadIndex() -> PolaroidIndex {
+        repairIndexFromDisk(readIndex())
     }
 
     private func writeIndex(_ index: PolaroidIndex) throws {

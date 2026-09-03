@@ -6,11 +6,16 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
     var caption: String
     var captionMode: CaptionMode
     var captionFont: CaptionFont
+    var captionFontSize: CaptionFontSize
     var captionHighlight: Bool
     /// Optional note on the reverse of the print.
     var backNote: String?
     /// Font used when rendering the reverse note.
     var backFont: CaptionFont
+    /// Emulsion drawn from the pack at capture. Old prints default to `onestep`.
+    var filmStock: FilmStock
+    /// Invisible expression strength (0.42…1.0). Missing → 1.0 (legacy full look).
+    var filmStrength: Double
 
     var hasBackNote: Bool {
         !(backNote?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
@@ -22,23 +27,29 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         caption: String,
         captionMode: CaptionMode,
         captionFont: CaptionFont = .serif,
+        captionFontSize: CaptionFontSize = .medium,
         captionHighlight: Bool = true,
         backNote: String? = nil,
-        backFont: CaptionFont = .script
+        backFont: CaptionFont = .script,
+        filmStock: FilmStock = .onestep,
+        filmStrength: Double = FilmExpression.legacyDefault
     ) {
         self.id = id
         self.createdAt = createdAt
         self.caption = caption
         self.captionMode = captionMode
         self.captionFont = captionFont
+        self.captionFontSize = captionFontSize
         self.captionHighlight = captionHighlight
         let trimmed = backNote.map { Caption.truncateBackNote($0) }
         self.backNote = trimmed.flatMap { $0.isEmpty ? nil : $0 }
         self.backFont = backFont
+        self.filmStock = filmStock
+        self.filmStrength = Self.clampStrength(filmStrength)
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, createdAt, caption, captionMode, captionFont, captionHighlight, backNote, backFont
+        case id, createdAt, caption, captionMode, captionFont, captionFontSize, captionHighlight, backNote, backFont, filmStock, filmStrength
         // Interim date/note schema — migrated on decode.
         case displayDate, note
     }
@@ -47,16 +58,22 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         createdAt = try container.decode(String.self, forKey: .createdAt)
-        captionFont = try container.decodeIfPresent(CaptionFont.self, forKey: .captionFont) ?? .serif
+        // Lossless string-enum decode: unknown / corrupt values must not wipe the gallery.
+        captionFont = Self.decodeStringEnum(container, forKey: .captionFont, default: .serif)
+        captionFontSize = Self.decodeStringEnum(container, forKey: .captionFontSize, default: .medium)
         captionHighlight = try container.decodeIfPresent(Bool.self, forKey: .captionHighlight) ?? true
-        backFont = try container.decodeIfPresent(CaptionFont.self, forKey: .backFont) ?? .script
+        backFont = Self.decodeStringEnum(container, forKey: .backFont, default: .script)
+        filmStock = Self.decodeStringEnum(container, forKey: .filmStock, default: .onestep)
+        filmStrength = Self.clampStrength(
+            try container.decodeIfPresent(Double.self, forKey: .filmStrength) ?? FilmExpression.legacyDefault
+        )
 
         let hasClassic = container.contains(.caption) || container.contains(.captionMode)
         let hasInterim = container.contains(.displayDate) || container.contains(.note)
 
         if hasClassic && !hasInterim {
             caption = try container.decodeIfPresent(String.self, forKey: .caption) ?? ""
-            captionMode = try container.decodeIfPresent(CaptionMode.self, forKey: .captionMode) ?? .date
+            captionMode = Self.decodeStringEnum(container, forKey: .captionMode, default: .date)
             let rawBack = try container.decodeIfPresent(String.self, forKey: .backNote)
             let trimmed = rawBack.map { Caption.truncateBackNote($0) }
             backNote = trimmed.flatMap { $0.isEmpty ? nil : $0 }
@@ -100,11 +117,30 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
             }
         } else {
             caption = try container.decodeIfPresent(String.self, forKey: .caption) ?? ""
-            captionMode = try container.decodeIfPresent(CaptionMode.self, forKey: .captionMode) ?? .date
+            captionMode = Self.decodeStringEnum(container, forKey: .captionMode, default: .date)
             let rawBack = try container.decodeIfPresent(String.self, forKey: .backNote)
             let trimmed = rawBack.map { Caption.truncateBackNote($0) }
             backNote = trimmed.flatMap { $0.isEmpty ? nil : $0 }
         }
+    }
+
+    /// Decodes a string-backed enum without throwing on unknown raw values.
+    private static func decodeStringEnum<T: RawRepresentable>(
+        _ container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys,
+        default defaultValue: T
+    ) -> T where T.RawValue == String {
+        guard let raw = try? container.decodeIfPresent(String.self, forKey: key),
+              let value = T(rawValue: raw)
+        else {
+            return defaultValue
+        }
+        return value
+    }
+
+    private static func clampStrength(_ value: Double) -> Double {
+        guard value.isFinite else { return FilmExpression.legacyDefault }
+        return min(FilmExpression.maximumStrength, max(0, value))
     }
 
     func encode(to encoder: Encoder) throws {
@@ -114,9 +150,12 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         try container.encode(caption, forKey: .caption)
         try container.encode(captionMode, forKey: .captionMode)
         try container.encode(captionFont, forKey: .captionFont)
+        try container.encode(captionFontSize, forKey: .captionFontSize)
         try container.encode(captionHighlight, forKey: .captionHighlight)
         try container.encodeIfPresent(backNote, forKey: .backNote)
         try container.encode(backFont, forKey: .backFont)
+        try container.encode(filmStock, forKey: .filmStock)
+        try container.encode(filmStrength, forKey: .filmStrength)
     }
 }
 
@@ -153,6 +192,7 @@ enum PolaroidIndexLogic {
         caption: String,
         captionMode: CaptionMode,
         captionFont: CaptionFont,
+        captionFontSize: CaptionFontSize,
         captionHighlight: Bool
     ) -> PolaroidIndex {
         PolaroidIndex(
@@ -163,6 +203,7 @@ enum PolaroidIndexLogic {
                 updated.caption = caption
                 updated.captionMode = captionMode
                 updated.captionFont = captionFont
+                updated.captionFontSize = captionFontSize
                 updated.captionHighlight = captionHighlight
                 return updated
             }
@@ -192,12 +233,55 @@ enum PolaroidIndexLogic {
         guard let raw, let data = raw.data(using: .utf8) else {
             return .empty
         }
-        do {
-            let parsed = try JSONDecoder().decode(PolaroidIndex.self, from: data)
+        // Prefer full decode when the file is healthy.
+        if let parsed = try? JSONDecoder().decode(PolaroidIndex.self, from: data) {
             return PolaroidIndex(version: 1, items: sortNewestFirst(parsed.items))
-        } catch {
+        }
+        // One bad row must not empty the gallery — decode items individually.
+        return parseItemsLeniently(from: data)
+    }
+
+    /// Recovers as many rows as possible when the whole-index decode fails.
+    static func parseItemsLeniently(from data: Data) -> PolaroidIndex {
+        guard
+            let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let arr = root["items"] as? [Any]
+        else {
             return .empty
         }
+        var items: [PolaroidRecord] = []
+        let decoder = JSONDecoder()
+        for element in arr {
+            guard JSONSerialization.isValidJSONObject(element),
+                  let itemData = try? JSONSerialization.data(withJSONObject: element),
+                  let record = try? decoder.decode(PolaroidRecord.self, from: itemData)
+            else {
+                continue
+            }
+            items.append(record)
+        }
+        return PolaroidIndex(version: 1, items: sortNewestFirst(items))
+    }
+
+    /// Builds placeholder records for on-disk print folders missing from the index.
+    static func recoverMissingRecords(
+        existing: [PolaroidRecord],
+        folderIDsWithPNG: [(id: String, createdAt: String)]
+    ) -> [PolaroidRecord] {
+        let known = Set(existing.map(\.id))
+        var recovered = existing
+        for entry in folderIDsWithPNG where !known.contains(entry.id) {
+            recovered.append(
+                PolaroidRecord(
+                    id: entry.id,
+                    createdAt: entry.createdAt,
+                    caption: "",
+                    captionMode: .blank,
+                    filmStock: .onestep
+                )
+            )
+        }
+        return sortNewestFirst(recovered)
     }
 
     static func serialize(_ index: PolaroidIndex) -> String {
