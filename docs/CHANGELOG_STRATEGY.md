@@ -77,9 +77,10 @@ Paste that into App Store Connect → version → What’s New. Keep the full de
 
 ## Branch habit
 
-- Day-to-day work on **`dev`**; land changelog bullets as you merge.
-- Cut releases from **`main`** (merge `dev` → `main`, then tag).
-- Hotfixes: branch from `main`, bump **patch**, merge back to `dev`.
+- **`main`** is the last App Store ship (currently **1.0.0**).
+- Day-to-day work on **`test`**; land changelog bullets as you go.
+- Cut releases from **`main`** (merge `test` → `main`, then tag).
+- Hotfixes: branch from `main`, bump **patch**, merge back to `test`.
 
 ## Don’t duplicate
 

@@ -2,6 +2,8 @@
 
 Take a photo. It comes out as a Polaroid. Date on the white strip. Save, share, or throw it away.
 
+**Version 1 is released.** **1.0.0** is live on the [App Store](https://apps.apple.com/app/postcardfilm/id6806571862). `main` is that build. Next version work happens on `test`.
+
 **Native iPhone app (SwiftUI).** Not affiliated with Polaroid or Fujifilm. Photos stay on your phone — no accounts, no cloud, no Android.
 
 ## Requirements
