@@ -15,8 +15,23 @@ enum ScreenshotHarness {
         case settings
     }
 
+    private static var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    /// Simulator-only. `seed(store:)` deletes `Documents/polaroids` wholesale, so the
+    /// harness must never engage on a real device holding real prints.
     static var isActive: Bool {
-        ProcessInfo.processInfo.arguments.contains("-SCREENSHOTS")
+        guard ProcessInfo.processInfo.arguments.contains("-SCREENSHOTS") else { return false }
+        guard isSimulator else {
+            print("[ScreenshotHarness] -SCREENSHOTS ignored: the harness is Simulator-only.")
+            return false
+        }
+        return true
     }
 
     static var screen: Screen {
@@ -54,6 +69,7 @@ enum ScreenshotHarness {
 
     @MainActor
     static func seed(store: PolaroidStore) {
+        guard isSimulator else { return }
         let images = seedURLs.compactMap { UIImage(contentsOfFile: $0.path) }
         guard !images.isEmpty else { return }
 
