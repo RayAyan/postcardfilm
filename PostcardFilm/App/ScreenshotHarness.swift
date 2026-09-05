@@ -4,7 +4,8 @@ import UIKit
 
 /// Debug-only support for capturing App Store screenshots in the Simulator, which
 /// has no camera. Launch with `-SCREENSHOTS -SCREENSHOT_SCREEN <screen>` and place
-/// square source photos in the app container's `Documents/_seed`.
+/// square source photos (see `Marketing/seed/00.jpg`…) in the app container's
+/// `Documents/_seed`. Sample captions below assume those seeds in sort order.
 enum ScreenshotHarness {
     enum Screen: String {
         case home
@@ -131,9 +132,9 @@ enum ScreenshotHarness {
     }
 
     private static let samples: [Sample] = [
-        Sample(photo: 2, caption: "Kananaskis Lake", backNote: "the water was freezing and we stayed anyway.", font: .script),
-        Sample(photo: 0, caption: nil, font: .serif),
-        Sample(photo: 1, caption: "sandymount", font: .typewriter),
+        Sample(photo: 0, caption: "Kananaskis Lake", backNote: "the water was freezing and we stayed anyway.", font: .script),
+        Sample(photo: 1, caption: nil, font: .serif),
+        Sample(photo: 2, caption: "sandymount", font: .typewriter),
     ]
 
     private static var documents: URL {

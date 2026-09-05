@@ -85,7 +85,7 @@ Branches: [`docs/BRANCHING.md`](docs/BRANCHING.md). Checklist: [`docs/CHANGELOG_
 
 ### Store screenshots
 
-App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). The Simulator has no camera, so a DEBUG-only harness ([`ScreenshotHarness.swift`](PostcardFilm/App/ScreenshotHarness.swift)) seeds prints from square JPEGs in the app container's `Documents/_seed` and pins one screen:
+App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). Finished sample prints live in `Marketing/AppStore/prints/`; square source JPEGs for the DEBUG harness live in `Marketing/seed/` (`00.jpg`…). Copy those into the app container's `Documents/_seed`, then:
 
 ```bash
 xcrun simctl launch <device> com.postcardfilm.app -SCREENSHOTS -SCREENSHOT_SCREEN gallery

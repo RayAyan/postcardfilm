@@ -29,6 +29,7 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Changed
 
+- App Store screenshots refreshed (no status bar; developing milk UI; original sample prints)
 - Process print uses more screen width (`processCardGutter`) with a shared canvas aspect lock — no 340pt height cap
 - Flip covers burned text instantly and syncs face/hit-target from angle; live reburns no longer tear down `PolaroidThumb` via `.id`
 - Settings / Process sheets share `PrintSectionHeader` + plain-list gutters; Settings subheading stays one line
