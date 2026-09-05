@@ -15,6 +15,7 @@ Maps shipping features to logic tests, front-end checks ([`HIG_CHECKLIST.md`](HI
 | Gallery | Select / long-press / batch delete | `GallerySelectionTests` | HIG Gallery | DESIGN Strip and reverse |
 | Gallery | Multi-download | — | HIG Gallery | DESIGN Strip and reverse |
 | Gallery | Index / recovery | `PolaroidIndexTests` | HIG Identity persistence | — |
+| Gallery | Persistence until uninstall | `GalleryPersistenceTests` | HIG Identity | DESIGN Brand / gallery-persistence rule |
 | Process | Strip/back edit (live apply, done only), flip | `CaptionTests` (dirty-check) | HIG Process | DESIGN Strip and reverse |
 | Process | Gallery paging | — | HIG Process | DESIGN Strip and reverse |
 | Process | Highlight via Settings / strip sheet | `PipelineSmokeTests` | HIG Process / Settings | DESIGN Strip and reverse |

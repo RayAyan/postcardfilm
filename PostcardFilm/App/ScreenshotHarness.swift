@@ -1,11 +1,14 @@
-#if DEBUG
+#if DEBUG && targetEnvironment(simulator)
 import SwiftUI
 import UIKit
 
-/// Debug-only support for capturing App Store screenshots in the Simulator, which
-/// has no camera. Launch with `-SCREENSHOTS -SCREENSHOT_SCREEN <screen>` and place
-/// square source photos (see `Marketing/seed/00.jpg`…) in the app container's
-/// `Documents/_seed`. Sample captions below assume those seeds in sort order.
+/// Simulator DEBUG-only support for capturing App Store screenshots (no camera).
+/// Launch with `-SCREENSHOTS -SCREENSHOT_SCREEN <screen>` and place square source
+/// photos (see `Marketing/seed/00.jpg`…) in the app container's `Documents/_seed`.
+///
+/// Hard rule: never wipe `Documents/polaroids`. Seed only upserts `seed-*` folders
+/// and merges into the index so real UUID prints survive. See
+/// `.cursor/rules/gallery-persistence.mdc`.
 enum ScreenshotHarness {
     enum Screen: String {
         case home
@@ -15,23 +18,8 @@ enum ScreenshotHarness {
         case settings
     }
 
-    private static var isSimulator: Bool {
-        #if targetEnvironment(simulator)
-        return true
-        #else
-        return false
-        #endif
-    }
-
-    /// Simulator-only. `seed(store:)` deletes `Documents/polaroids` wholesale, so the
-    /// harness must never engage on a real device holding real prints.
     static var isActive: Bool {
-        guard ProcessInfo.processInfo.arguments.contains("-SCREENSHOTS") else { return false }
-        guard isSimulator else {
-            print("[ScreenshotHarness] -SCREENSHOTS ignored: the harness is Simulator-only.")
-            return false
-        }
-        return true
+        ProcessInfo.processInfo.arguments.contains("-SCREENSHOTS")
     }
 
     static var screen: Screen {
@@ -69,17 +57,19 @@ enum ScreenshotHarness {
 
     @MainActor
     static func seed(store: PolaroidStore) {
-        guard isSimulator else { return }
         let images = seedURLs.compactMap { UIImage(contentsOfFile: $0.path) }
         guard !images.isEmpty else { return }
 
         let root = documents.appendingPathComponent("polaroids", isDirectory: true)
-        try? FileManager.default.removeItem(at: root)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
+        // Refresh only seed-* folders. Never remove the polaroids root or UUID prints.
+        removeSeedFolders(under: root)
+
+        let existingIndex = readIndex(at: root)
         let stamp = ISO8601DateFormatter()
         stamp.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        var records: [PolaroidRecord] = []
+        var seedRecords: [PolaroidRecord] = []
 
         for (offset, sample) in samples.prefix(sampleLimit).enumerated() {
             let image = images[sample.photo % images.count]
@@ -116,7 +106,7 @@ enum ScreenshotHarness {
                 }
             }
 
-            records.append(
+            seedRecords.append(
                 PolaroidRecord(
                     id: id,
                     createdAt: stamp.string(from: date),
@@ -131,11 +121,42 @@ enum ScreenshotHarness {
             )
         }
 
-        let index = PolaroidIndex(version: 1, items: records)
+        let merged = PolaroidIndexLogic.mergingScreenshotSeeds(
+            existing: existingIndex.items,
+            seeds: seedRecords
+        )
+        let index = PolaroidIndex(version: 1, items: merged)
         try? PolaroidIndexLogic.serialize(index)
             .data(using: .utf8)?
             .write(to: root.appendingPathComponent("index.json"))
         store.reload()
+    }
+
+    /// Deletes only `seed-*` print folders. Never touches UUID folders or the root.
+    private static func removeSeedFolders(under root: URL) {
+        guard let urls = try? FileManager.default.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        for url in urls {
+            let id = url.lastPathComponent
+            guard id.hasPrefix("seed-") else { continue }
+            let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
+            guard values?.isDirectory == true else { continue }
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private static func readIndex(at root: URL) -> PolaroidIndex {
+        let indexURL = root.appendingPathComponent("index.json")
+        guard let data = try? Data(contentsOf: indexURL),
+              let raw = String(data: data, encoding: .utf8)
+        else {
+            return .empty
+        }
+        return PolaroidIndexLogic.parse(raw)
     }
 
     private struct Sample {

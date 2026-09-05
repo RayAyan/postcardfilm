@@ -85,4 +85,4 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 
 - [ ] Home screen name: `postcardfilm`
 - [ ] Wordmark: `postcardfilm.` (lowercase, no underline)
-- [ ] Prints in Documents survive app updates (same bundle id)
+- [ ] Prints in Documents survive app updates, TestFlight, and Xcode Run (same bundle id) — only uninstall wipes; in-app delete is user-confirmed (`GalleryPersistenceTests`)

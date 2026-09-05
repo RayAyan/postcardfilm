@@ -318,6 +318,15 @@ enum PolaroidIndexLogic {
         return sortNewestFirst(recovered)
     }
 
+    /// Upserts screenshot `seed-*` rows without dropping real (non-seed) prints.
+    static func mergingScreenshotSeeds(
+        existing: [PolaroidRecord],
+        seeds: [PolaroidRecord]
+    ) -> [PolaroidRecord] {
+        let kept = existing.filter { !$0.id.hasPrefix("seed-") }
+        return sortNewestFirst(kept + seeds)
+    }
+
     static func serialize(_ index: PolaroidIndex) -> String {
         let sorted = PolaroidIndex(version: 1, items: sortNewestFirst(index.items))
         let data = (try? JSONEncoder().encode(sorted)) ?? Data()

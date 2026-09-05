@@ -13,6 +13,8 @@ Single source for visual and voice decisions. Code tokens live in `PostcardFilm/
 
 Constants: [`Brand.swift`](../PostcardFilm/Theme/Brand.swift).
 
+**Gallery persistence:** prints in `Documents/polaroids` survive TestFlight, App Store updates, and Xcode Run until the user uninstalls. Never wipe that folder from code. In-app delete after confirm only. See [`.cursor/rules/gallery-persistence.mdc`](../.cursor/rules/gallery-persistence.mdc).
+
 ## Typography
 
 All **app UI** chrome goes through [`Typography.swift`](../PostcardFilm/Theme/Typography.swift) → `AppType`:

@@ -21,6 +21,7 @@ test  --(ready to upload)-->  main  --(approved + Distribute)-->  release
 3. **Never** open a PR from `test` (or any other branch) into `release`. CI (`release-branch-guard`) and the GitHub ruleset reject that.
 4. Merge into `release` with a **merge commit** only (no squash, no rebase). The ruleset allows `merge` only.
 5. Nobody “works on” `release`. It documents ships; it is not a base for ongoing work.
+6. **Gallery persistence:** TestFlight / App Store / Xcode Run from any branch only replaces the binary. `Documents/polaroids` stays until the user **uninstalls**. Archive is always **Release**; branch does not flip Debug/Release. Never wipe the polaroids root. See [`.cursor/rules/gallery-persistence.mdc`](../.cursor/rules/gallery-persistence.mdc).
 
 ## Flow
 
@@ -29,6 +30,7 @@ test  --(ready to upload)-->  main  --(approved + Distribute)-->  release
 3. When the build is **approved and you hit Distribute**: open PR **`main` → `release`**, merge (merge commit). Tag `vx.y.z` on that ship if not already tagged.
 4. Stay on **`test`**.
 
+Uploading a TestFlight build from a local **`test`** checkout is still Archive → Release. It does **not** clear a tester’s (or your) gallery. **Run** from Xcode onto a phone also keeps Documents; after the simulator-only harness, it cannot seed/wipe either.
 ## Hotfixes
 
 Still **no commits on `release`**. Fix on `test` (optionally compare against `release` for the live code), land on `main`, submit / distribute, then merge **`main` → `release`**.

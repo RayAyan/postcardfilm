@@ -1,6 +1,10 @@
 import Foundation
 import UIKit
 
+/// Local gallery under `Documents/polaroids`. Hard rule: never `removeItem` the
+/// polaroids **root** — only per-print folders after the user confirms delete.
+/// Gallery must survive TestFlight / App Store / Xcode Run until uninstall.
+/// See `.cursor/rules/gallery-persistence.mdc`.
 @MainActor
 final class PolaroidStore: ObservableObject {
     @Published private(set) var items: [PolaroidRecord] = []

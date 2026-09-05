@@ -85,14 +85,20 @@ Branches: [`docs/BRANCHING.md`](docs/BRANCHING.md). Checklist: [`docs/CHANGELOG_
 
 ### Store screenshots
 
-App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). Finished sample prints live in `Marketing/AppStore/prints/`; square source JPEGs for the DEBUG harness live in `Marketing/seed/` (`00.jpg`…). Copy those into the app container's `Documents/_seed`, then:
+**Simulator only.** Never add `-SCREENSHOTS` to the scheme used to Run on a physical phone — the harness is compiled out of every device binary, and must never wipe real prints.
+
+App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). Finished sample prints live in `Marketing/AppStore/prints/`; square source JPEGs for the DEBUG harness live in `Marketing/seed/` (`00.jpg`…). Copy those into the **Simulator** app container's `Documents/_seed`, then:
 
 ```bash
 xcrun simctl launch <device> com.postcardfilm.app -SCREENSHOTS -SCREENSHOT_SCREEN gallery
 xcrun simctl io <device> screenshot --type=png shot.png
 ```
 
-Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 14 Plus / 12 Pro Max device type — its 3x screen is exactly the 6.5" upload size.
+Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 14 Plus / 12 Pro Max device type — its 3x screen is exactly the 6.5" upload size. Seed upserts `seed-*` folders only and merges the index (real UUID prints stay).
+
+## Gallery persistence
+
+**Hard rule:** while postcardfilm stays installed (`com.postcardfilm.app`), prints in `Documents/polaroids` survive TestFlight, App Store updates, Xcode Run, and any branch. Uninstall is the only full wipe. In-app delete after confirm is the only intentional delete. Agents: `.cursor/rules/gallery-persistence.mdc`. Tests: `GalleryPersistenceTests`.
 
 ## Privacy
 

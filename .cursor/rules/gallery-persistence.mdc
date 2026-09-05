@@ -1,0 +1,34 @@
+---
+description: Gallery prints must survive every binary swap until the user uninstalls the app.
+alwaysApply: true
+---
+
+# Gallery persistence (hard rule)
+
+Prints live in `Documents/polaroids` under bundle id `com.postcardfilm.app`.
+
+**While the app stays installed, the gallery must never be wiped** — not by TestFlight, App Store updates, Xcode Run, Debug vs Release, or any git branch (`test` / `main` / `release`). Uninstall (or changing the bundle id) is the only full loss iOS allows. In-app delete after the confirm modal is the only allowed intentional delete.
+
+## Never
+
+- `FileManager.removeItem` on the polaroids **root** (`Documents/polaroids`).
+- Replace `index.json` with seed-only rows that drop real UUID prints.
+- Change `PRODUCT_BUNDLE_IDENTIFIER` / `com.postcardfilm.app` casually (a new id is a new app).
+- Put `-SCREENSHOTS` on a scheme used to **Run on a physical phone**.
+
+## Screenshot harness
+
+- Compile only under `#if DEBUG && targetEnvironment(simulator)`.
+- Seed may upsert / refresh folders whose ids start with `seed-` only.
+- Index updates must go through `PolaroidIndexLogic.mergingScreenshotSeeds` (keep every non-`seed-` record).
+- Never delete UUID print folders from the harness.
+
+## Store
+
+- [`PolaroidStore`](PostcardFilm/Store/PolaroidStore.swift) may `removeItem` only a **per-print** directory from `delete(id:)` / `delete(ids:)` after UI confirm.
+- Keep `repairIndexFromDisk` / `recoverMissingRecords` so folders with `polaroid.png` reappear if the index is thin.
+
+## Tests / docs
+
+- [`GalleryPersistenceTests`](PostcardFilmTests/GalleryPersistenceTests.swift) must stay green.
+- Human copy: README **Gallery persistence**, [`docs/BRANCHING.md`](docs/BRANCHING.md), HIG Identity, FEATURE_COVERAGE, DESIGN Brand.

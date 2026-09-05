@@ -17,6 +17,9 @@ xcuserdata/
 # local env files
 .env*.local
 
+# Xcode Devices “Download Container” dumps
+*.xcappdata
+
 # legacy Expo / Node (must not reappear)
 .expo/
 node_modules/

@@ -32,6 +32,7 @@
 		5AFE4392C5788988DBCA94AC /* Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EB27F71283A07BFB6021B2 /* Brand.swift */; };
 		66B05250AF64BEA424751A16 /* PostcardFilmApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F46352101568F853C156E4 /* PostcardFilmApp.swift */; };
 		676DAE89BEA872E253FC2156 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B89109B7EE631EA77F7976D8 /* GalleryView.swift */; };
+		6A3BBC28444ADEE1E24045A8 /* GalleryPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8E44E3669E69CB1F3040EA /* GalleryPersistenceTests.swift */; };
 		79F4AAD5B300E0EB0649C18B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014E8FCC215D25F776ED18CD /* SettingsView.swift */; };
 		816038252BA46C094DCC5C46 /* Caption.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15DA5C450CB663051C3DC9E /* Caption.swift */; };
 		8D44A51ED13AEF18A43BD43C /* DevelopingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */; };
@@ -78,6 +79,7 @@
 		3406F7B4E95F5B540CD97062 /* CameraFacingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFacingTests.swift; sourceTree = "<group>"; };
 		35BF45490B72B6ECAA6B4C51 /* PolaroidPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidPipeline.swift; sourceTree = "<group>"; };
 		3A9493B4269B795E6CA5BA06 /* DevelopingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopingOverlay.swift; sourceTree = "<group>"; };
+		3D8E44E3669E69CB1F3040EA /* GalleryPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryPersistenceTests.swift; sourceTree = "<group>"; };
 		46FB0A8062E9A723118DD062 /* PrintTextStyleControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintTextStyleControls.swift; sourceTree = "<group>"; };
 		4853155333BACE3BF457B487 /* PolaroidStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolaroidStore.swift; sourceTree = "<group>"; };
 		5EFF89C939280970D82E16B7 /* ScreenFlash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenFlash.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 				93A5FCB1B3E7707AE43AC6D3 /* FilmStockTests.swift */,
 				EE8220AC735647B574FCA8A6 /* FlashPlanTests.swift */,
 				6131F41155F423AACBC3AC1E /* FrameGeometryTests.swift */,
+				3D8E44E3669E69CB1F3040EA /* GalleryPersistenceTests.swift */,
 				AEA9CEE8FDC1487A4D26BF28 /* GallerySelectionTests.swift */,
 				3034A6D6354BAEDD0525BFA0 /* GradeTests.swift */,
 				8F9EA96CA963893E19F0BE8E /* PipelineSmokeTests.swift */,
@@ -453,6 +456,7 @@
 				469D06A28A4EF2EF54F1117C /* FilmStockTests.swift in Sources */,
 				FE888D2F8B87F5497D54E765 /* FlashPlanTests.swift in Sources */,
 				DACCEEF2A9967DA9096DB495 /* FrameGeometryTests.swift in Sources */,
+				6A3BBC28444ADEE1E24045A8 /* GalleryPersistenceTests.swift in Sources */,
 				0BEE7D52F68013A2C23B52E7 /* GallerySelectionTests.swift in Sources */,
 				4E6790684CAB022573B05A1B /* GradeTests.swift in Sources */,
 				F9DADE2DBA611FC2D2BF4CE9 /* PipelineSmokeTests.swift in Sources */,

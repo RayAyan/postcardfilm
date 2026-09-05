@@ -21,7 +21,7 @@ struct HomeView: View {
 
     /// False when the debug screenshot harness stands in for the camera.
     private var usesCamera: Bool {
-        #if DEBUG
+        #if DEBUG && targetEnvironment(simulator)
         return !ScreenshotHarness.isActive
         #else
         return true
@@ -184,7 +184,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var preview: some View {
-        #if DEBUG
+        #if DEBUG && targetEnvironment(simulator)
         if ScreenshotHarness.isActive {
             ScreenshotViewfinder()
         } else {
