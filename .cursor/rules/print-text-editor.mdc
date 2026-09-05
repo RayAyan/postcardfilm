@@ -1,0 +1,45 @@
+---
+description: Keep print text style UI and fields unified across Settings, front strip, and back note.
+globs: PostcardFilm/Features/Shared/PrintTextStyleControls.swift,PostcardFilm/Features/Process/**/*.swift,PostcardFilm/Features/Settings/**/*.swift,PostcardFilm/Processing/Caption.swift,PostcardFilm/Processing/PolaroidPipeline.swift,PostcardFilm/Settings/AppSettings.swift,PostcardFilm/Store/PolaroidRecord.swift
+alwaysApply: false
+---
+
+# Print text editor
+
+## Rule
+
+All **font / size / letter case** (and optional strip **highlight**) go through [`PrintTextStyleControls`](PostcardFilm/Features/Shared/PrintTextStyleControls.swift). Pass `highlight:` only for Settings strip defaults and the Process front strip sheet — not the back note sheet. Use `showHighlight: false` when caption mode is blank.
+
+Surfaces that must stay in sync:
+
+1. Settings — strip text defaults (mode, date format, font, size, letter case, highlight)
+2. Process — front strip editor
+3. Process — back note editor (font / size / letter case only)
+
+Do **not** fork list/chip UIs per surface. Style options render as **shared chip grids** (`PrintChoiceChip` / `PrintChoiceGrid` inside `PrintTextStyleControls`). Caption modes use `CaptionModeGrid`. Extend those, then wire record + settings + `PolaroidPipeline` burn paths.
+
+Section order (content then style): **strip text** → **date format** (Settings + Process front strip, date mode only) → **font** → **size** → **letter case** → **highlight** (last; omit when blank).
+
+## Product
+
+- Settings change **defaults for the next capture only** — never mutate existing prints. Back note style has no Settings UI; new notes seed from silent `AppSettings` defaults, then stay per-print.
+- Per-print overrides live on `PolaroidRecord` (front caption fields including `dateFormat` and `captionLetterCase`, and `backFont` / `backFontSize` / `backLetterCase`).
+- Surface-specific content (caption mode, date format, multiline back note) stays outside the shared style control.
+- Process front/back sheets **apply live** (debounced reburn). Toolbar is a single **done** — no save/cancel. Same for `CustomCaptionPrompt`.
+
+## Settings UX
+
+- One muted, **leading-aligned** page subheading under the large Settings title (`Brand.settingsSubtext`) — same **20pt** leading edge (`AppTheme.pageGutter`) as Gallery subtext. Explains defaults-only behavior. Keep it on **one line** (scale down if needed).
+- Use a plain list with explicit `listRowInsets` / `PrintSectionHeader` so chips and headers share one edge with the large title (avoid insetGrouped compounding).
+- Process edit sheets **omit** that subheading.
+- Section headers stay leading-aligned chrome captions via shared `PrintSectionHeader`.
+- Version/credit footer stays **centered**: `postcardfilm. <marketing> (<build>)` plus credit.
+
+## Process UX
+
+- Front: edit only via the **white strip** hit target.
+- Back: edit via tap on the reverse face.
+- Flip hides burned strip/note text under a paper cover, then restores it after the turn.
+- Gallery Process uses page swipe between prints; do not fight that with navigation pop on horizontal drag.
+- No bottom-left highlighter — highlight lives in Settings + front strip sheet only.
+- Action bar: share (left); delete + download (right).

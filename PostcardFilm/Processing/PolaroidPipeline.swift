@@ -329,10 +329,13 @@ enum PolaroidPipeline {
     /// Cream reverse of the print — blank stock with a handwritten note area.
     static func renderBack(
         note: String,
-        font: CaptionFont = .script
+        font: CaptionFont = .script,
+        fontSize: CaptionFontSize = .medium,
+        letterCase: DateCaseStyle = .lowercase
     ) throws -> UIImage {
         let trimmed = Caption.truncateBackNote(note)
         guard !trimmed.isEmpty else { throw PipelineError.encodeFailed }
+        let display = letterCase.apply(trimmed)
 
         let layout = FrameGeometry.computeFrameLayout(imageSide: FrameConstants.imageSide)
         let canvasSize = CGSize(width: layout.canvasWidth, height: layout.canvasHeight)
@@ -354,7 +357,7 @@ enum PolaroidPipeline {
                 height: canvasSize.height - margin * 2 - brandReserve
             )
 
-            let bodySize = max(36, CGFloat(layout.stripHeight) * 0.22)
+            let bodySize = max(36, CGFloat(layout.stripHeight) * fontSize.backBodyScale)
             let bodyFont = font.uiFont(size: bodySize)
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = .left
@@ -367,7 +370,7 @@ enum PolaroidPipeline {
                 .paragraphStyle: paragraph,
                 .kern: font == .typewriter ? 0.4 : -0.2,
             ]
-            let attributed = NSAttributedString(string: trimmed, attributes: attrs)
+            let attributed = NSAttributedString(string: display, attributes: attrs)
             attributed.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
 
             Self.drawBackWordmark(canvasSize: canvasSize, margin: margin)

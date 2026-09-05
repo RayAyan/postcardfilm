@@ -93,7 +93,7 @@ Safe ranges after expression + serendipity (non-Original):
 
 ## Capture haptics
 
-Sequence in [`Haptics.swift`](../PostcardFilm/Support/Haptics.swift): punchy shutter on press → quiet flash/pipeline → postcard milk with “developing…” (~1.5s) → label fades → milk clears over ~3s (print fades in) with rising `developPulse` across that ~4.5s window → strong `developDone` when the print is fully out. Device check: eyes closed — click, quiet, countdown chemistry, satisfying reveal.
+Sequence in [`Haptics.swift`](../PostcardFilm/Support/Haptics.swift): punchy shutter on press → quiet flash/pipeline → postcard milk with “developing…” (~0.8s) → label fades → milk clears over ~2s (print fades in) with rising `developPulse` across that ~2.8s window → strong `developDone` when the print is fully out. Device check: eyes closed — click, quiet, countdown chemistry, satisfying reveal.
 
 ## Status
 

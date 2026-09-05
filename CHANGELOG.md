@@ -14,36 +14,63 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Added
 
+- Persisted per-print `dateFormat` so reburn / strip edits keep the format used at capture
+- Persisted per-print `captionLetterCase` so strip letter case round-trips in Process
+- Resilient capture ladder (retry + flash-off fallback) and pre-armed flash settings
 - **the pack** — five camera-named film stocks (`onestep` / Original, `sun660`, `mini9`, `natura`, `m6`); at shutter the app draws one at random; user never chooses; stock persisted so reburn keeps the emulsion
 - Adaptive film expression — invisible per-print strength (~65% gentle / ~25% medium / ~10% bold) softens harsh knobs while keeping stock color identity; Original stays frozen; strength persisted for reburn
-- Process highlighter toggle (bottom left) to add/remove caption highlight on a print
+- Strip caption highlight default (on / off) in Settings + per-print in the strip editor sheet
 - Strip caption size default (small / medium / large) in Settings + per-print in Process
 - Gallery multi-download in select mode
 - Process share via the system share sheet (visible face)
+- Settings defaults subheading (`your defaults for new prints.`)
+- Centered delete confirm modal (Process + Gallery) with delete / go back
+- Feature coverage map ([`docs/FEATURE_COVERAGE.md`](docs/FEATURE_COVERAGE.md)) linking tests, HIG, and design rules
 
 ### Changed
 
+- Process print uses more screen width (`processCardGutter`) with a shared canvas aspect lock — no 340pt height cap
+- Flip covers burned text instantly and syncs face/hit-target from angle; live reburns no longer tear down `PolaroidThumb` via `.id`
+- Settings / Process sheets share `PrintSectionHeader` + plain-list gutters; Settings subheading stays one line
+- Front strip editor includes date-format chips; per-print `captionLetterCase` persists; back-note sentence case burns correctly
+- Settings / Gallery share a **20pt** page gutter; section headers and chips align with the large title
+- Settings section order: strip text → date format → font → size → letter case → highlight (last; hidden when blank)
+- Process strip / back note editors apply live; toolbar is **done** only (no save/cancel)
+- Process action bar: share on the left; delete + download (`photo.badge.arrow.down`) on the right — highlighter control removed
+- Camera session no longer stops mid-flash when Process pushes (deferred stop while capture in flight)
+- Settings footer shows marketing version **and** build (`postcardfilm. 1.1.0 (2)`); `Info.plist` reads versions from `project.yml` build settings
+- Expanded HIG checklist into a full front-end regression set; DESIGN documents alignment, flash, facing, chips, delete modal
+- Home tagline shortened to `take a photo.`
+- Settings exposes strip text defaults only (no film back note block); back note style is per-print after capture
+- Flash is on/off only (no auto): rear camera fires hardware flash; front camera uses screen flash (white overlay + full brightness); control stays enabled on every facing — never “unavailable”
 - Pack stocks pushed apart with hard tone roles (bright flash / punchy Instax / flat Fuji / dense Leica); Original (`onestep`) stays the frozen 1.0.0 look
 - Pack softened toward real Polaroid (muted contrast, subtler flash fill, soft grain + edge burn, per-print serendipity); Original still frozen
 - Pack pulled closer to Original — less contrast/crush/flash/vignette; color cousins kept; Original still frozen
 - Calibration is three layers: scene adaptation → stock identity → weighted expression (plus scaled serendipity)
-- Capture haptics: punchy shutter + rising develop pulses + strong reveal settle
-- Capture haptics: shutter on press; rising develop pulses across ~4.5s Polaroid fade; reveal thump when milk clears
-- Capture transition: quick shutter flash → postcard milk → “developing…” 1.5s → 3s slow print fade-in (no wipe)
+- Capture haptics: shutter on press; rising develop pulses across ~2.8s Polaroid fade; reveal thump when milk clears
+- Capture transition: quick shutter flash → postcard milk → “developing…” 0.8s → 2s slow print fade-in (no wipe)
+- Gallery Process: page-style swipe between prints (not nav pop); capture develop flow unchanged
+- Process: tap white strip to edit caption; tap back face for note; shared print-text style controls (font/size/case, optional highlight) across Settings front + Process sheets
+- Print-text options use compact chip grids (mode / font / highlight / size / case / date format) in Settings and Process sheets
+- Back note gains size + letter case (per print)
 - Camera preview resumes after backgrounding / session interruption
-- Process download icon optically aligned with share/trash
-- Process highlighter always visible; yellow chip when on
 - Long dates zero-pad the day (`03 jan 2026`)
 - Gallery select uses an inline title (no truncated “S…”) and caches thumbs for smoother scroll
 - Front camera preview and capture are mirrored (WYSIWYG selfie)
 
 ### Fixed
 
+- Opening or dismissing the strip / back-note editor with no edits no longer re-burns the print (removes the front-image flicker on Done)
+- Settings no longer shows duplicated font / size / letter case grids (removed film back note defaults block)
+- Print flip covers burned strip/note text during the turn so caption does not warp mid-spin
+- Front camera + screen flash: wait for session/AE after brightness jump and silently retry once on not-ready so the first shutter captures
 - Camera flip no longer unmirrors the current preview before switching; selfie preview/capture stay mirrored, rear does not
 - Gallery restores prints still on disk when `index.json` fails to decode or omits folders (unknown film/font values no longer empty the gallery)
+- Rear flash no longer fails capture when Process pushes mid-exposure
 
 ### Removed
 
+- Process bottom-left highlighter control (highlight lives in Settings + strip sheet)
 ## [1.0.0] - 2026-09-01
 
 First public App Store release.

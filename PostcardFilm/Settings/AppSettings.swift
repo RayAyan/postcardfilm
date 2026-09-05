@@ -10,6 +10,10 @@ struct AppSettings: Equatable {
     var captionFont: CaptionFont = .serif
     var captionFontSize: CaptionFontSize = .medium
     var captionHighlight: Bool = true
+    /// Defaults for a new back note (Process). Do not rewrite existing prints.
+    var backFont: CaptionFont = .script
+    var backFontSize: CaptionFontSize = .medium
+    var backLetterCase: DateCaseStyle = .lowercase
 
     static let `default` = AppSettings()
 
@@ -59,6 +63,9 @@ private struct StoredSettings: Codable {
     var captionFont: String?
     var captionFontSize: String?
     var captionHighlight: Bool?
+    var backFont: String?
+    var backFontSize: String?
+    var backLetterCase: String?
 
     init(from settings: AppSettings) {
         captionMode = settings.captionMode.rawValue
@@ -69,6 +76,9 @@ private struct StoredSettings: Codable {
         captionFont = settings.captionFont.rawValue
         captionFontSize = settings.captionFontSize.rawValue
         captionHighlight = settings.captionHighlight
+        backFont = settings.backFont.rawValue
+        backFontSize = settings.backFontSize.rawValue
+        backLetterCase = settings.backLetterCase.rawValue
     }
 
     func asAppSettings() -> AppSettings {
@@ -80,7 +90,10 @@ private struct StoredSettings: Codable {
             saveOnCapture: saveOnCapture,
             captionFont: CaptionFont(rawValue: captionFont ?? "") ?? .serif,
             captionFontSize: CaptionFontSize(rawValue: captionFontSize ?? "") ?? .medium,
-            captionHighlight: captionHighlight ?? true
+            captionHighlight: captionHighlight ?? true,
+            backFont: CaptionFont(rawValue: backFont ?? "") ?? .script,
+            backFontSize: CaptionFontSize(rawValue: backFontSize ?? "") ?? .medium,
+            backLetterCase: DateCaseStyle(rawValue: backLetterCase ?? "") ?? .lowercase
         )
     }
 }
@@ -102,7 +115,7 @@ enum AppVersion {
     }
 
     static var label: String {
-        "\(Brand.wordmark) \(marketing)"
+        "\(Brand.wordmark) \(marketing) (\(build))"
     }
 
     static let credit = Brand.credit

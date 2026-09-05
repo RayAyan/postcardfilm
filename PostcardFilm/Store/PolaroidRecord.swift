@@ -8,10 +8,18 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
     var captionFont: CaptionFont
     var captionFontSize: CaptionFontSize
     var captionHighlight: Bool
+    /// Letter case burned into the strip at capture / last reburn.
+    var captionLetterCase: DateCaseStyle
+    /// Date format burned into the strip at capture / last reburn. Settings must not rewrite this.
+    var dateFormat: DateFormatOption
     /// Optional note on the reverse of the print.
     var backNote: String?
     /// Font used when rendering the reverse note.
     var backFont: CaptionFont
+    /// Size used when rendering the reverse note.
+    var backFontSize: CaptionFontSize
+    /// Letter case applied when burning the reverse note.
+    var backLetterCase: DateCaseStyle
     /// Emulsion drawn from the pack at capture. Old prints default to `onestep`.
     var filmStock: FilmStock
     /// Invisible expression strength (0.42…1.0). Missing → 1.0 (legacy full look).
@@ -29,8 +37,12 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         captionFont: CaptionFont = .serif,
         captionFontSize: CaptionFontSize = .medium,
         captionHighlight: Bool = true,
+        captionLetterCase: DateCaseStyle = .lowercase,
+        dateFormat: DateFormatOption = .long,
         backNote: String? = nil,
         backFont: CaptionFont = .script,
+        backFontSize: CaptionFontSize = .medium,
+        backLetterCase: DateCaseStyle = .lowercase,
         filmStock: FilmStock = .onestep,
         filmStrength: Double = FilmExpression.legacyDefault
     ) {
@@ -41,15 +53,21 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         self.captionFont = captionFont
         self.captionFontSize = captionFontSize
         self.captionHighlight = captionHighlight
+        self.captionLetterCase = captionLetterCase
+        self.dateFormat = dateFormat
         let trimmed = backNote.map { Caption.truncateBackNote($0) }
         self.backNote = trimmed.flatMap { $0.isEmpty ? nil : $0 }
         self.backFont = backFont
+        self.backFontSize = backFontSize
+        self.backLetterCase = backLetterCase
         self.filmStock = filmStock
         self.filmStrength = Self.clampStrength(filmStrength)
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, createdAt, caption, captionMode, captionFont, captionFontSize, captionHighlight, backNote, backFont, filmStock, filmStrength
+        case id, createdAt, caption, captionMode, captionFont, captionFontSize, captionHighlight
+        case captionLetterCase, dateFormat
+        case backNote, backFont, backFontSize, backLetterCase, filmStock, filmStrength
         // Interim date/note schema — migrated on decode.
         case displayDate, note
     }
@@ -62,7 +80,11 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         captionFont = Self.decodeStringEnum(container, forKey: .captionFont, default: .serif)
         captionFontSize = Self.decodeStringEnum(container, forKey: .captionFontSize, default: .medium)
         captionHighlight = try container.decodeIfPresent(Bool.self, forKey: .captionHighlight) ?? true
+        captionLetterCase = Self.decodeStringEnum(container, forKey: .captionLetterCase, default: .lowercase)
+        dateFormat = Self.decodeStringEnum(container, forKey: .dateFormat, default: .long)
         backFont = Self.decodeStringEnum(container, forKey: .backFont, default: .script)
+        backFontSize = Self.decodeStringEnum(container, forKey: .backFontSize, default: .medium)
+        backLetterCase = Self.decodeStringEnum(container, forKey: .backLetterCase, default: .lowercase)
         filmStock = Self.decodeStringEnum(container, forKey: .filmStock, default: .onestep)
         filmStrength = Self.clampStrength(
             try container.decodeIfPresent(Double.self, forKey: .filmStrength) ?? FilmExpression.legacyDefault
@@ -152,8 +174,12 @@ struct PolaroidRecord: Codable, Identifiable, Equatable {
         try container.encode(captionFont, forKey: .captionFont)
         try container.encode(captionFontSize, forKey: .captionFontSize)
         try container.encode(captionHighlight, forKey: .captionHighlight)
+        try container.encode(captionLetterCase, forKey: .captionLetterCase)
+        try container.encode(dateFormat, forKey: .dateFormat)
         try container.encodeIfPresent(backNote, forKey: .backNote)
         try container.encode(backFont, forKey: .backFont)
+        try container.encode(backFontSize, forKey: .backFontSize)
+        try container.encode(backLetterCase, forKey: .backLetterCase)
         try container.encode(filmStock, forKey: .filmStock)
         try container.encode(filmStrength, forKey: .filmStrength)
     }
@@ -193,7 +219,9 @@ enum PolaroidIndexLogic {
         captionMode: CaptionMode,
         captionFont: CaptionFont,
         captionFontSize: CaptionFontSize,
-        captionHighlight: Bool
+        captionHighlight: Bool,
+        captionLetterCase: DateCaseStyle,
+        dateFormat: DateFormatOption
     ) -> PolaroidIndex {
         PolaroidIndex(
             version: 1,
@@ -205,6 +233,8 @@ enum PolaroidIndexLogic {
                 updated.captionFont = captionFont
                 updated.captionFontSize = captionFontSize
                 updated.captionHighlight = captionHighlight
+                updated.captionLetterCase = captionLetterCase
+                updated.dateFormat = dateFormat
                 return updated
             }
         )
@@ -214,7 +244,9 @@ enum PolaroidIndexLogic {
         in index: PolaroidIndex,
         id: String,
         backNote: String?,
-        backFont: CaptionFont
+        backFont: CaptionFont,
+        backFontSize: CaptionFontSize = .medium,
+        backLetterCase: DateCaseStyle = .lowercase
     ) -> PolaroidIndex {
         PolaroidIndex(
             version: 1,
@@ -224,6 +256,8 @@ enum PolaroidIndexLogic {
                 let trimmed = backNote.map { Caption.truncateBackNote($0) }
                 updated.backNote = trimmed.flatMap { $0.isEmpty ? nil : $0 }
                 updated.backFont = backFont
+                updated.backFontSize = backFontSize
+                updated.backLetterCase = backLetterCase
                 return updated
             }
         )

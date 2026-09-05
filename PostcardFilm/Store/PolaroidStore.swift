@@ -91,6 +91,8 @@ final class PolaroidStore: ObservableObject {
         captionFont: CaptionFont = .serif,
         captionFontSize: CaptionFontSize = .medium,
         captionHighlight: Bool = true,
+        captionLetterCase: DateCaseStyle = .lowercase,
+        dateFormat: DateFormatOption = .long,
         backNote: String? = nil,
         filmStock: FilmStock = .onestep,
         filmStrength: Double = FilmExpression.legacyDefault,
@@ -120,6 +122,8 @@ final class PolaroidStore: ObservableObject {
             captionFont: captionFont,
             captionFontSize: captionFontSize,
             captionHighlight: captionHighlight,
+            captionLetterCase: captionLetterCase,
+            dateFormat: dateFormat,
             backNote: trimmedBack,
             filmStock: filmStock,
             filmStrength: filmStrength
@@ -163,6 +167,8 @@ final class PolaroidStore: ObservableObject {
         captionFont: CaptionFont,
         captionFontSize: CaptionFontSize,
         captionHighlight: Bool,
+        captionLetterCase: DateCaseStyle,
+        dateFormat: DateFormatOption,
         polaroidPNG: Data
     ) throws {
         try polaroidPNG.write(to: polaroidURL(for: id), options: .atomic)
@@ -174,7 +180,9 @@ final class PolaroidStore: ObservableObject {
             captionMode: captionMode,
             captionFont: captionFont,
             captionFontSize: captionFontSize,
-            captionHighlight: captionHighlight
+            captionHighlight: captionHighlight,
+            captionLetterCase: captionLetterCase,
+            dateFormat: dateFormat
         )
         try writeIndex(index)
         items = index.items
@@ -185,6 +193,8 @@ final class PolaroidStore: ObservableObject {
         id: String,
         backNote: String?,
         backFont: CaptionFont = .script,
+        backFontSize: CaptionFontSize = .medium,
+        backLetterCase: DateCaseStyle = .lowercase,
         backPNG: Data?
     ) throws {
         let trimmed = backNote.map { Caption.truncateBackNote($0) }.flatMap { $0.isEmpty ? nil : $0 }
@@ -199,7 +209,9 @@ final class PolaroidStore: ObservableObject {
             in: index,
             id: id,
             backNote: trimmed,
-            backFont: backFont
+            backFont: backFont,
+            backFontSize: backFontSize,
+            backLetterCase: backLetterCase
         )
         try writeIndex(index)
         items = index.items

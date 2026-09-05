@@ -7,6 +7,6 @@ Process: [CHANGELOG_STRATEGY.md](CHANGELOG_STRATEGY.md). Branches: [BRANCHING.md
 
 | Date | Version | Build | Channel | Notes |
 |------|---------|-------|---------|-------|
-| — | 1.1.0 | 2 | local / test | the pack — five random film stocks |
+| 2026-09-05 | 1.1.0 | 2 | main (App Store candidate) | the pack — five random film stocks; Process/Settings polish |
 | 2026-09-01 | 1.0.0 | 1 | App Store | First public release — camera, grade, gallery, flip/back note |
 | 2026-08-29 | 1.0.0 | 1 | local | Native SwiftUI rewrite — camera, gallery, grade pipeline |

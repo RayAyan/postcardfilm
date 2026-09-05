@@ -3,46 +3,9 @@ import UIKit
 
 @MainActor
 final class CameraController: NSObject, ObservableObject {
-    enum FlashMode: String, CaseIterable {
-        case off
-        case on
-        case auto
-
-        var avMode: AVCaptureDevice.FlashMode {
-            switch self {
-            case .off: return .off
-            case .on: return .on
-            case .auto: return .auto
-            }
-        }
-
-        var symbolName: String {
-            switch self {
-            case .off: return "bolt.slash"
-            case .on, .auto: return "bolt.fill"
-            }
-        }
-
-        var accessibilityLabel: String {
-            switch self {
-            case .off: return "Flash off"
-            case .on: return "Flash on"
-            case .auto: return "Flash auto"
-            }
-        }
-
-        func next() -> FlashMode {
-            switch self {
-            case .off: return .on
-            case .on: return .auto
-            case .auto: return .off
-            }
-        }
-    }
-
     @Published var permission: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @Published private(set) var position: AVCaptureDevice.Position = .back
-    @Published var flashMode: FlashMode = .off
+    @Published var isFlashOn = false
     @Published var isSessionRunning = false
     @Published var lastError: String?
     @Published private(set) var isConfigured = false
@@ -53,14 +16,23 @@ final class CameraController: NSObject, ObservableObject {
     nonisolated(unsafe) let session = AVCaptureSession()
     nonisolated(unsafe) private let photoOutput = AVCapturePhotoOutput()
     private var captureContinuation: CheckedContinuation<UIImage, Error>?
+    private var captureTimeoutTask: Task<Void, Never>?
+    private var captureInFlight = false
+    private var pendingStop = false
     private let sessionQueue = DispatchQueue(label: "com.postcardpolaroid.camera")
     private var interruptionObserver: NSObjectProtocol?
+
+    private static let captureTimeoutNs: UInt64 = 6_000_000_000
 
     /// True when photo capture can safely be called (live video connection).
     var canCapturePhoto: Bool {
         session.isRunning
             && photoOutput.connection(with: .video)?.isEnabled == true
             && photoOutput.connection(with: .video)?.isActive == true
+    }
+
+    var flashPlan: FlashPlan {
+        FlashPlan.resolve(isFlashOn: isFlashOn, position: position)
     }
 
     func requestPermissionIfNeeded() async {
@@ -96,6 +68,7 @@ final class CameraController: NSObject, ObservableObject {
                     self.isConfigured = true
                     self.isSessionRunning = running
                     self.observeInterruptionEnded()
+                    self.prepareFlashSettings()
                     continuation.resume()
                 }
             }
@@ -136,7 +109,10 @@ final class CameraController: NSObject, ObservableObject {
         sessionQueue.async { [weak self] in
             guard let self, !self.session.isRunning else { return }
             self.session.startRunning()
-            Task { @MainActor in self.isSessionRunning = self.session.isRunning }
+            Task { @MainActor in
+                self.isSessionRunning = self.session.isRunning
+                self.prepareFlashSettings()
+            }
         }
     }
 
@@ -156,6 +132,7 @@ final class CameraController: NSObject, ObservableObject {
                     let running = self.session.isRunning
                     Task { @MainActor in
                         self.isSessionRunning = running
+                        self.prepareFlashSettings()
                         continuation.resume()
                     }
                 }
@@ -166,6 +143,12 @@ final class CameraController: NSObject, ObservableObject {
     }
 
     func stop() {
+        // Never tear down mid-capture — Process push would otherwise kill a flash exposure.
+        if captureInFlight {
+            pendingStop = true
+            return
+        }
+        pendingStop = false
         sessionQueue.async { [weak self] in
             guard let self, self.session.isRunning else { return }
             self.session.stopRunning()
@@ -183,8 +166,21 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
-    func cycleFlash() {
-        flashMode = flashMode.next()
+    func toggleFlash() {
+        isFlashOn.toggle()
+        prepareFlashSettings()
+    }
+
+    /// Pre-arm photo settings so the first flash shot does not pay setup cost.
+    private func prepareFlashSettings() {
+        let plan = flashPlan
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            let template = AVCapturePhotoSettings()
+            let desired: AVCaptureDevice.FlashMode = (plan == .hardware) ? .on : .off
+            template.flashMode = self.photoOutput.supportedFlashModes.contains(desired) ? desired : .off
+            self.photoOutput.setPreparedPhotoSettingsArray([template]) { _, _ in }
+        }
     }
 
     private func observeInterruptionEnded() {
@@ -200,12 +196,40 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
-    func takePhoto() async throws -> UIImage {
-        // Wait briefly for the session to become capture-ready (config is async).
-        for _ in 0 ..< 20 {
-            if canCapturePhoto { break }
-            try? await Task.sleep(nanoseconds: 50_000_000)
+    /// Resilient capture: attempt → recover → attempt → flash-off fallback.
+    func capturePhotoResilient() async throws -> UIImage {
+        let plan = flashPlan
+        if plan == .hardware || plan == .screen {
+            await waitForExposureSettle()
         }
+
+        var lastError: Error = CameraError.notReady
+        for attempt in 1 ... CaptureAttemptLadder.maxAttempts {
+            let preference = CaptureAttemptLadder.preference(forAttempt: attempt)
+            do {
+                return try await takePhoto(flashPreference: preference)
+            } catch {
+                lastError = error
+                await resume()
+                await waitUntilCaptureReady(attempts: 40)
+                await waitForExposureSettle()
+            }
+        }
+        throw lastError
+    }
+
+    /// Screen-flash capture: resume after brightness jump, wait for AE, then resilient shoot.
+    func takePhotoAfterScreenFlash() async throws -> UIImage {
+        await resume()
+        await waitUntilCaptureReady(attempts: 40)
+        await waitForExposureSettle()
+        return try await capturePhotoResilient()
+    }
+
+    func takePhoto(
+        flashPreference: CaptureAttemptLadder.FlashPreference = .desired
+    ) async throws -> UIImage {
+        await waitUntilCaptureReady(attempts: 20)
 
         guard canCapturePhoto else {
             #if targetEnvironment(simulator)
@@ -216,9 +240,13 @@ final class CameraController: NSObject, ObservableObject {
             #endif
         }
 
-        let flash = flashMode
-        let useBack = position == .back
+        let plan = flashPlan
+        let flashMode = CaptureAttemptLadder.hardwareFlashMode(
+            preference: flashPreference,
+            plan: plan
+        )
 
+        captureInFlight = true
         return try await withCheckedThrowingContinuation { continuation in
             // Avoid double-resume if a previous capture hung.
             if let pending = self.captureContinuation {
@@ -226,14 +254,7 @@ final class CameraController: NSObject, ObservableObject {
                 self.captureContinuation = nil
             }
             self.captureContinuation = continuation
-
-            let settings = AVCapturePhotoSettings()
-            if useBack,
-               let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-               device.hasFlash
-            {
-                settings.flashMode = flash.avMode
-            }
+            self.armCaptureTimeout()
 
             self.sessionQueue.async { [weak self] in
                 guard let self else { return }
@@ -248,19 +269,74 @@ final class CameraController: NSObject, ObservableObject {
                     }
                     return
                 }
+
+                let settings = AVCapturePhotoSettings()
+                settings.flashMode = self.photoOutput.supportedFlashModes.contains(flashMode)
+                    ? flashMode
+                    : .off
+
                 self.photoOutput.capturePhoto(with: settings, delegate: self)
             }
         }
     }
 
+    private func armCaptureTimeout() {
+        captureTimeoutTask?.cancel()
+        captureTimeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Self.captureTimeoutNs)
+            guard !Task.isCancelled else { return }
+            guard captureContinuation != nil else { return }
+            finishCapture(throwing: CameraError.timedOut)
+        }
+    }
+
+    /// Wait until the session can take a photo (e.g. after brightness-driven interruption).
+    func waitUntilCaptureReady(attempts: Int = 40) async {
+        for _ in 0 ..< attempts {
+            if canCapturePhoto { return }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+    }
+
+    /// Poll until AE settles on the current lighting, or timeout (~0.4s).
+    func waitForExposureSettle(timeoutMs: Int = 400) async {
+        let steps = max(1, timeoutMs / 50)
+        for _ in 0 ..< steps {
+            let adjusting = await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+                sessionQueue.async { [weak self] in
+                    guard let self else {
+                        continuation.resume(returning: false)
+                        return
+                    }
+                    let device = (self.session.inputs.first as? AVCaptureDeviceInput)?.device
+                    continuation.resume(returning: device?.isAdjustingExposure == true)
+                }
+            }
+            if !adjusting { return }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+    }
+
     private func finishCapture(throwing error: Error) {
+        captureTimeoutTask?.cancel()
+        captureTimeoutTask = nil
         captureContinuation?.resume(throwing: error)
         captureContinuation = nil
+        captureInFlight = false
+        if pendingStop {
+            stop()
+        }
     }
 
     private func finishCapture(returning image: UIImage) {
+        captureTimeoutTask?.cancel()
+        captureTimeoutTask = nil
         captureContinuation?.resume(returning: image)
         captureContinuation = nil
+        captureInFlight = false
+        if pendingStop {
+            stop()
+        }
     }
 
     #if targetEnvironment(simulator)
@@ -330,6 +406,7 @@ enum CameraError: LocalizedError {
     case notReady
     case busy
     case decodeFailed
+    case timedOut
 
     var errorDescription: String? {
         switch self {
@@ -339,7 +416,8 @@ enum CameraError: LocalizedError {
             return "Another capture is already in progress."
         case .decodeFailed:
             return "Could not read the photo."
+        case .timedOut:
+            return "Capture timed out. Try again."
         }
     }
 }
-

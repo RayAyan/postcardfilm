@@ -4,9 +4,9 @@ import SwiftUI
 struct DevelopingOverlay: View {
     var reduceMotion: Bool
     /// How long “developing…” stays up before the label fades out.
-    var labelHold: TimeInterval = 1.5
+    var labelHold: TimeInterval = 0.8
     /// How long milk takes to clear after the label is gone (print fades in).
-    var fadeDuration: TimeInterval = 3.0
+    var fadeDuration: TimeInterval = 2.0
     /// Hold opaque milk until the print exists.
     var printReady: Bool = true
     var onFinished: (() -> Void)?
@@ -75,7 +75,7 @@ struct DevelopingOverlay: View {
         scheduleFadeIfNeeded()
     }
 
-    /// Start the 3s milk fade only after label hold AND print ready.
+    /// Start the milk fade only after label hold AND print ready.
     private func scheduleFadeIfNeeded() {
         guard !didFinish, !fadeScheduled else { return }
 

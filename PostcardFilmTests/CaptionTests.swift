@@ -155,4 +155,213 @@ final class CaptionTests: XCTestCase {
         XCTAssertEqual(DateCaseStyle.lowercase.apply(DateCaseStyle.lowercase.label), "lowercase")
         XCTAssertEqual(DateCaseStyle.sentence.apply(DateCaseStyle.sentence.label), "Sentence Case")
     }
+
+    // MARK: - Burn dirty checks
+
+    private func makeRecord(
+        caption: String = "29 aug 2026",
+        captionMode: CaptionMode = .date,
+        captionFont: CaptionFont = .serif,
+        captionFontSize: CaptionFontSize = .medium,
+        captionHighlight: Bool = true,
+        captionLetterCase: DateCaseStyle = .lowercase,
+        dateFormat: DateFormatOption = .long,
+        backNote: String? = nil,
+        backFont: CaptionFont = .script,
+        backFontSize: CaptionFontSize = .medium,
+        backLetterCase: DateCaseStyle = .lowercase
+    ) -> PolaroidRecord {
+        PolaroidRecord(
+            id: "test",
+            createdAt: "2026-08-29T12:00:00.000Z",
+            caption: caption,
+            captionMode: captionMode,
+            captionFont: captionFont,
+            captionFontSize: captionFontSize,
+            captionHighlight: captionHighlight,
+            captionLetterCase: captionLetterCase,
+            dateFormat: dateFormat,
+            backNote: backNote,
+            backFont: backFont,
+            backFontSize: backFontSize,
+            backLetterCase: backLetterCase
+        )
+    }
+
+    func testFrontBurnNeededUnchangedDate() {
+        let record = makeRecord()
+        XCTAssertFalse(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .date,
+                customText: "",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+    }
+
+    func testFrontBurnNeededUnchangedCustom() {
+        let record = makeRecord(caption: "beach day", captionMode: .custom)
+        XCTAssertFalse(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "beach day",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+    }
+
+    func testFrontBurnNeededUnchangedBlank() {
+        let record = makeRecord(caption: "", captionMode: .blank)
+        XCTAssertFalse(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .blank,
+                customText: "",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+    }
+
+    func testFrontBurnNeededDetectsStyleAndTextChanges() {
+        let record = makeRecord(caption: "beach day", captionMode: .custom)
+        XCTAssertTrue(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "beach day",
+                font: .modern,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+        XCTAssertTrue(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "beach day",
+                font: .serif,
+                fontSize: .large,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+        XCTAssertTrue(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "beach day",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .sentence,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+        XCTAssertTrue(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "beach day",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .iso,
+                highlight: true
+            )
+        )
+        XCTAssertTrue(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "beach day",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: false
+            )
+        )
+        XCTAssertTrue(
+            Caption.frontBurnNeeded(
+                record: record,
+                mode: .custom,
+                customText: "other day",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase,
+                dateFormat: .long,
+                highlight: true
+            )
+        )
+    }
+
+    func testBackBurnNeededUnchangedBlank() {
+        let record = makeRecord()
+        XCTAssertFalse(
+            Caption.backBurnNeeded(
+                record: record,
+                note: "",
+                font: .script,
+                fontSize: .medium,
+                letterCase: .lowercase
+            )
+        )
+        XCTAssertFalse(
+            Caption.backBurnNeeded(
+                record: record,
+                note: "   ",
+                font: .script,
+                fontSize: .medium,
+                letterCase: .lowercase
+            )
+        )
+    }
+
+    func testBackBurnNeededDetectsNoteChanges() {
+        let record = makeRecord(backNote: "hello")
+        XCTAssertFalse(
+            Caption.backBurnNeeded(
+                record: record,
+                note: "hello",
+                font: .script,
+                fontSize: .medium,
+                letterCase: .lowercase
+            )
+        )
+        XCTAssertTrue(
+            Caption.backBurnNeeded(
+                record: record,
+                note: "goodbye",
+                font: .script,
+                fontSize: .medium,
+                letterCase: .lowercase
+            )
+        )
+        XCTAssertTrue(
+            Caption.backBurnNeeded(
+                record: record,
+                note: "hello",
+                font: .serif,
+                fontSize: .medium,
+                letterCase: .lowercase
+            )
+        )
+    }
 }

@@ -37,7 +37,8 @@ If `main` already has a next minor you have **not** distributed, do **not** merg
 
 ## Current (after 1.0.0 ship)
 
-- **`release`** and **`main`** both point at **1.0.0** (build 1) — tag `v1.0.0`.
-- **`test`** has 1.1 work (the pack). That stays off `main` / `release` until you promote it.
+- **`release`** points at **1.0.0** (build 1) — tag `v1.0.0` — live on the App Store.
+- **`main`** is the **1.1.0** (build 2) App Store candidate (the pack + Process/Settings polish). Archive / upload from here when ready.
+- **`test`** stays the day-to-day branch; keep landing work here and promote to `main` when the next candidate is ready.
 
 See also: [CHANGELOG_STRATEGY.md](CHANGELOG_STRATEGY.md) (semver, What’s New, cut checklist).

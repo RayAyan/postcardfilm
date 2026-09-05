@@ -83,12 +83,33 @@ final class PipelineSmokeTests: XCTestCase {
     }
 
     func testRenderBackWithTypewriterAndBlank() throws {
-        let back = try PolaroidPipeline.renderBack(note: "hello", font: .typewriter)
+        let back = try PolaroidPipeline.renderBack(
+            note: "hello",
+            font: .typewriter,
+            fontSize: .large,
+            letterCase: .sentence
+        )
         let blank = try PolaroidPipeline.renderBlankBack()
         let layout = FrameGeometry.computeFrameLayout()
         XCTAssertEqual(Int(back.size.width), layout.canvasWidth)
         XCTAssertEqual(Int(blank.size.width), layout.canvasWidth)
         XCTAssertEqual(Int(blank.size.height), layout.canvasHeight)
+    }
+
+    func testRenderBackAppliesSentenceCaseOnce() throws {
+        let sentence = try PolaroidPipeline.renderBack(
+            note: "hello world",
+            font: .serif,
+            letterCase: .sentence
+        )
+        let lower = try PolaroidPipeline.renderBack(
+            note: "hello world",
+            font: .serif,
+            letterCase: .lowercase
+        )
+        // Different letter-case burns must produce different PNG bytes.
+        XCTAssertNotEqual(sentence.pngData(), lower.pngData())
+        XCTAssertEqual(DateCaseStyle.sentence.apply("hello world"), "Hello World")
     }
 
     #if targetEnvironment(simulator)

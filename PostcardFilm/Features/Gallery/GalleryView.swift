@@ -23,8 +23,7 @@ struct GalleryView: View {
 
     /// Matches current Polaroid canvas proportions (image + borders + strip).
     private var cellAspect: CGFloat {
-        let layout = FrameGeometry.computeFrameLayout()
-        return CGFloat(layout.canvasWidth) / CGFloat(layout.canvasHeight)
+        FrameGeometry.canvasAspect
     }
 
     private var allSelected: Bool {
@@ -61,9 +60,9 @@ struct GalleryView: View {
                         .appChromeText()
                         .foregroundStyle(AppTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 4)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, AppTheme.pageGutter)
+                        .padding(.top, 2)
+                        .padding(.bottom, 4)
 
                     LazyVGrid(columns: columns, spacing: 10) {
                         ForEach(store.items) { item in
@@ -71,7 +70,7 @@ struct GalleryView: View {
                                 .id(item.id)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppTheme.pageGutter)
                     .padding(.bottom, 16)
                 }
             }
@@ -80,12 +79,11 @@ struct GalleryView: View {
         .navigationTitle(isSelecting ? selectedTitle : "gallery")
         .navigationBarTitleDisplayMode(isSelecting ? .inline : .large)
         .toolbar { toolbarContent }
-        .confirmationDialog("are you sure?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-            Button("delete", role: .destructive) { performDelete() }
-            Button("cancel", role: .cancel) {}
-        } message: {
-            Text(deleteMessage)
-        }
+        .deleteConfirmModal(
+            isPresented: $showDeleteConfirm,
+            message: Brand.deleteConfirm(count: selectedIDs.count),
+            onDelete: { performDelete() }
+        )
         .alert("photos access is off", isPresented: $showPhotosDenied) {
             Button("cancel", role: .cancel) {}
             Button("open settings") {
@@ -113,11 +111,6 @@ struct GalleryView: View {
 
     private var selectedTitle: String {
         selectedIDs.isEmpty ? "select" : "\(selectedIDs.count) selected"
-    }
-
-    private var deleteMessage: String {
-        let n = selectedIDs.count
-        return n == 1 ? "delete this print?" : "delete \(n) prints?"
     }
 
     @ToolbarContentBuilder
@@ -151,7 +144,7 @@ struct GalleryView: View {
                 Button {
                     Task { await performDownload() }
                 } label: {
-                    Image(systemName: "square.and.arrow.down")
+                    Image(systemName: "photo.badge.arrow.down")
                         .font(.system(size: 17, weight: .semibold))
                 }
                 .accessibilityLabel("download")
@@ -315,7 +308,7 @@ struct PolaroidThumb: View {
     let url: URL
     var refreshToken: Int = 0
     var mode: PolaroidThumbMode = .fit
-    var aspect: CGFloat = 0.82
+    var aspect: CGFloat = FrameGeometry.canvasAspect
 
     var body: some View {
         Group {
@@ -325,8 +318,6 @@ struct PolaroidThumb: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFit()
-                        .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
-                        .id(refreshToken)
                 case .gridFill:
                     Color.clear
                         .aspectRatio(aspect, contentMode: .fit)
@@ -337,7 +328,6 @@ struct PolaroidThumb: View {
                         )
                         .clipped()
                         .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
-                        .id(refreshToken)
                 }
             } else {
                 Rectangle()

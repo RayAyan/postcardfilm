@@ -57,22 +57,35 @@ final class PolaroidIndexTests: XCTestCase {
             captionMode: .custom,
             captionFont: .typewriter,
             captionFontSize: .large,
-            captionHighlight: false
+            captionHighlight: false,
+            captionLetterCase: .sentence,
+            dateFormat: .short
         )
         let updated = PolaroidIndexLogic.find(in: index, id: "a")
         XCTAssertEqual(updated?.caption, "rewritten")
         XCTAssertEqual(updated?.captionFont, .typewriter)
         XCTAssertEqual(updated?.captionFontSize, .large)
         XCTAssertEqual(updated?.captionHighlight, false)
+        XCTAssertEqual(updated?.captionLetterCase, .sentence)
+        XCTAssertEqual(updated?.dateFormat, .short)
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "b")?.caption, "new")
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "b")?.backNote, "a longer note on the reverse")
     }
 
     func testUpdateBackNote() {
         var index = PolaroidIndexLogic.add(to: .empty, record: older)
-        index = PolaroidIndexLogic.updateBackNote(in: index, id: "a", backNote: "  hello back  ", backFont: .script)
+        index = PolaroidIndexLogic.updateBackNote(
+            in: index,
+            id: "a",
+            backNote: "  hello back  ",
+            backFont: .script,
+            backFontSize: .large,
+            backLetterCase: .sentence
+        )
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "a")?.backNote, "hello back")
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "a")?.backFont, .script)
+        XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "a")?.backFontSize, .large)
+        XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "a")?.backLetterCase, .sentence)
         index = PolaroidIndexLogic.updateBackNote(in: index, id: "a", backNote: "   ", backFont: .typewriter)
         XCTAssertNil(PolaroidIndexLogic.find(in: index, id: "a")?.backNote)
         XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "a")?.backFont, .typewriter)
@@ -97,10 +110,46 @@ final class PolaroidIndexTests: XCTestCase {
         XCTAssertEqual(index.items[0].captionFont, .serif)
         XCTAssertEqual(index.items[0].captionFontSize, .medium)
         XCTAssertEqual(index.items[0].captionHighlight, true)
+        XCTAssertEqual(index.items[0].captionLetterCase, .lowercase)
         XCTAssertEqual(index.items[0].backFont, .script)
+        XCTAssertEqual(index.items[0].backFontSize, .medium)
+        XCTAssertEqual(index.items[0].backLetterCase, .lowercase)
         XCTAssertEqual(index.items[0].filmStock, .onestep)
         XCTAssertEqual(index.items[0].filmStrength, FilmExpression.legacyDefault, accuracy: 0.0001)
         XCTAssertNil(index.items[0].backNote)
+        XCTAssertEqual(index.items[0].dateFormat, .long)
+    }
+
+    func testDateFormatRoundTrip() {
+        let record = PolaroidRecord(
+            id: "fmt",
+            createdAt: "2026-08-29T00:00:00.000Z",
+            caption: "hi",
+            captionMode: .date,
+            dateFormat: .iso
+        )
+        let index = PolaroidIndexLogic.add(to: .empty, record: record)
+        let again = PolaroidIndexLogic.parse(PolaroidIndexLogic.serialize(index))
+        XCTAssertEqual(again.items[0].dateFormat, .iso)
+    }
+
+    func testCaptionLetterCaseRoundTrip() {
+        let record = PolaroidRecord(
+            id: "case",
+            createdAt: "2026-08-29T00:00:00.000Z",
+            caption: "Hello",
+            captionMode: .custom,
+            captionLetterCase: .sentence
+        )
+        let index = PolaroidIndexLogic.add(to: .empty, record: record)
+        let again = PolaroidIndexLogic.parse(PolaroidIndexLogic.serialize(index))
+        XCTAssertEqual(again.items[0].captionLetterCase, .sentence)
+    }
+
+    func testCanvasAspectMatchesLayout() {
+        let layout = FrameGeometry.computeFrameLayout()
+        let expected = CGFloat(layout.canvasWidth) / CGFloat(layout.canvasHeight)
+        XCTAssertEqual(FrameGeometry.canvasAspect, expected, accuracy: 0.0001)
     }
 
     func testBackFontRoundTrip() {
@@ -110,11 +159,15 @@ final class PolaroidIndexTests: XCTestCase {
             caption: "hi",
             captionMode: .date,
             backNote: "note",
-            backFont: .typewriter
+            backFont: .typewriter,
+            backFontSize: .small,
+            backLetterCase: .sentence
         )
         let index = PolaroidIndexLogic.add(to: .empty, record: record)
         let again = PolaroidIndexLogic.parse(PolaroidIndexLogic.serialize(index))
         XCTAssertEqual(again.items[0].backFont, .typewriter)
+        XCTAssertEqual(again.items[0].backFontSize, .small)
+        XCTAssertEqual(again.items[0].backLetterCase, .sentence)
         XCTAssertEqual(again.items[0].backNote, "note")
     }
 

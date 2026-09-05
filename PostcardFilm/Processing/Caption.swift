@@ -117,6 +117,15 @@ enum CaptionFontSize: String, Codable, CaseIterable, Identifiable {
         case .large: return 0.38
         }
     }
+
+    /// Multiplier of strip height used for back-note body size (medium matches legacy 0.22).
+    var backBodyScale: CGFloat {
+        switch self {
+        case .small: return 0.18
+        case .medium: return 0.22
+        case .large: return 0.30
+        }
+    }
 }
 
 enum Caption {
@@ -204,5 +213,51 @@ enum Caption {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.string(from: date)
+    }
+
+    /// True when front strip drafts differ from what is already burned on the record.
+    static func frontBurnNeeded(
+        record: PolaroidRecord,
+        mode: CaptionMode,
+        customText: String,
+        font: CaptionFont,
+        fontSize: CaptionFontSize,
+        letterCase: DateCaseStyle,
+        dateFormat: DateFormatOption,
+        highlight: Bool
+    ) -> Bool {
+        if mode != record.captionMode
+            || font != record.captionFont
+            || fontSize != record.captionFontSize
+            || letterCase != record.captionLetterCase
+            || dateFormat != record.dateFormat
+            || highlight != record.captionHighlight
+        {
+            return true
+        }
+        if mode == .custom {
+            let draftCaption = letterCase.apply(truncateCaption(customText))
+            return draftCaption != record.caption
+        }
+        return false
+    }
+
+    /// True when back note drafts differ from what is already burned on the record.
+    static func backBurnNeeded(
+        record: PolaroidRecord,
+        note: String,
+        font: CaptionFont,
+        fontSize: CaptionFontSize,
+        letterCase: DateCaseStyle
+    ) -> Bool {
+        let trimmed = truncateBackNote(note)
+        let cased = letterCase.apply(trimmed)
+        let normalized: String? = cased.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? nil
+            : cased
+        return normalized != record.backNote
+            || font != record.backFont
+            || fontSize != record.backFontSize
+            || letterCase != record.backLetterCase
     }
 }
