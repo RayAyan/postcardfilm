@@ -10,7 +10,7 @@ Two audiences, one source of truth.
 
 ## Semver (this app)
 
-`MAJOR.MINOR.PATCH` in `project.yml` + `Info.plist`. Build number (`CURRENT_PROJECT_VERSION`) **always increments** for every upload to App Store Connect — even if marketing version stays the same.
+`MAJOR.MINOR.PATCH` in `project.yml` only (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`). `Info.plist` reads those via `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`. Build number **always increments** for every upload to App Store Connect — even if marketing version stays the same.
 
 | Bump | When |
 |------|------|
@@ -68,19 +68,22 @@ Paste that into App Store Connect → version → What’s New. Keep the full de
 1. **QA** — walk [`HIG_CHECKLIST.md`](HIG_CHECKLIST.md) on a physical iPhone.
 2. **Changelog** — move `[Unreleased]` bullets into `## [x.y.z] - YYYY-MM-DD`. Leave an empty `[Unreleased]` stub.
 3. **What’s New** — draft the short App Store blurb (save it under the release heading as an HTML comment, or in the GitHub Release body).
-4. **Version** — set `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](../project.yml) and `CFBundleShortVersionString` / `CFBundleVersion` in [`Info.plist`](../PostcardFilm/Resources/Info.plist). Run `xcodegen generate`.
+4. **Version** — set `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](../project.yml). Run `xcodegen generate`. (`Info.plist` picks them up automatically.)
 5. **Index** — append a row to [`VERSIONS.md`](VERSIONS.md).
 6. **Links** — update compare URLs at the bottom of `CHANGELOG.md`.
-7. **Tag** — `git tag -a vx.y.z -m "postcardfilm x.y.z"` on `main`, push tags.
+7. **Tag** — `git tag -a vx.y.z -m "postcardfilm x.y.z"` on the ship commit (after `main` is the candidate), push tags.
 8. **GitHub Release** — paste changelog section + What’s New.
-9. **Archive** — Xcode → Archive → upload. Attach build in App Store Connect.
+9. **Archive** — Xcode → Archive from **`main`** → upload. Attach build in App Store Connect.
+10. **After Distribute** — PR **`main` → `release`** (merge commit only). See [`BRANCHING.md`](BRANCHING.md).
 
 ## Branch habit
 
-- **`main`** is the last App Store ship (currently **1.0.0**).
-- Day-to-day work on **`test`**; land changelog bullets as you go.
-- Cut releases from **`main`** (merge `test` → `main`, then tag).
-- Hotfixes: branch from `main`, bump **patch**, merge back to `test`.
+Canonical rules: [`BRANCHING.md`](BRANCHING.md).
+
+- **`test`** — GitHub default; all day-to-day work; land changelog bullets as you go.
+- **`main`** — App Store candidate only (merge `test` → `main` when ready to upload / wait for approval).
+- **`release`** — live store ledger (currently **1.0.0**). Update **only** by merging `main` → `release` after approval + Distribute. No direct commits; no merges from `test`.
+- Hotfixes: fix on `test`, promote through `main`, then `main` → `release` after distribute.
 
 ## Don’t duplicate
 

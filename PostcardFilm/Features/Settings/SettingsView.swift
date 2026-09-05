@@ -10,87 +10,75 @@ struct SettingsView: View {
     var body: some View {
         List {
             Section {
-                ForEach(CaptionMode.allCases) { mode in
-                    checkRow(
-                        title: mode.label,
-                        selected: settingsStore.settings.captionMode == mode
-                    ) {
-                        if mode == .custom {
-                            draftCustom = settingsStore.settings.customDefault
-                            showCustomPrompt = true
-                        } else {
-                            settingsStore.update { $0.captionMode = mode }
-                        }
+                Text(Brand.settingsSubtext)
+                    .font(AppType.caption(12))
+                    .appChromeText()
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .listRowInsets(
+                        EdgeInsets(top: 2, leading: AppTheme.pageGutter, bottom: 4, trailing: AppTheme.pageGutter)
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+
+            Section {
+                CaptionModeGrid(
+                    mode: Binding(
+                        get: { settingsStore.settings.captionMode },
+                        set: { value in settingsStore.update { $0.captionMode = value } }
+                    ),
+                    onSelectCustom: {
+                        draftCustom = settingsStore.settings.customDefault
+                        showCustomPrompt = true
                     }
-                }
+                )
                 if settingsStore.settings.captionMode == .custom,
                    !settingsStore.settings.customDefault.isEmpty
                 {
                     Text(settingsStore.settings.customDefault)
                         .font(AppType.body(15))
                         .foregroundStyle(AppTheme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .listRowInsets(
+                            EdgeInsets(
+                                top: 8,
+                                leading: AppTheme.pageGutter,
+                                bottom: 8,
+                                trailing: AppTheme.pageGutter
+                            )
+                        )
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                         .onTapGesture {
                             draftCustom = settingsStore.settings.customDefault
                             showCustomPrompt = true
                         }
                 }
             } header: {
-                Text("film front caption")
-                    .font(AppType.caption(12))
-                    .appChromeText()
+                PrintSectionHeader(title: "strip text")
             }
 
-            Section {
-                ForEach(CaptionFont.allCases) { font in
-                    checkRow(
-                        title: font.label,
-                        selected: settingsStore.settings.captionFont == font,
-                        font: Font(font.previewFont())
-                    ) {
-                        settingsStore.update { $0.captionFont = font }
-                    }
-                }
-            } header: {
-                Text("font")
-                    .font(AppType.caption(12))
-                    .appChromeText()
-            }
-
-            Section {
-                ForEach(DateFormatOption.allCases) { format in
-                    let sample = Caption.formatDate(
-                        Date(),
-                        format: format,
+            if settingsStore.settings.captionMode == .date {
+                Section {
+                    DateFormatGrid(
+                        format: binding(\.dateFormat),
                         letterCase: settingsStore.settings.dateCase
                     )
-                    checkRow(
-                        title: sample,
-                        selected: settingsStore.settings.dateFormat == format
-                    ) {
-                        settingsStore.update { $0.dateFormat = format }
-                    }
+                } header: {
+                    PrintSectionHeader(title: "date format")
                 }
-            } header: {
-                Text("date format")
-                    .font(AppType.caption(12))
-                    .appChromeText()
             }
 
-            Section {
-                ForEach(DateCaseStyle.allCases) { style in
-                    checkRow(
-                        title: style.apply(style.label),
-                        selected: settingsStore.settings.dateCase == style,
-                        preserveCase: true
-                    ) {
-                        settingsStore.update { $0.dateCase = style }
-                    }
-                }
-            } header: {
-                Text("date case")
-                    .font(AppType.caption(12))
-                    .appChromeText()
-            }
+            PrintTextStyleControls(
+                font: binding(\.captionFont),
+                fontSize: binding(\.captionFontSize),
+                letterCase: binding(\.dateCase),
+                highlight: binding(\.captionHighlight),
+                showHighlight: settingsStore.settings.captionMode != .blank
+            )
 
             VStack(spacing: 6) {
                 Text(AppVersion.label)
@@ -108,9 +96,12 @@ struct SettingsView: View {
             .multilineTextAlignment(.center)
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .padding(.top, 8)
+            .listRowInsets(
+                EdgeInsets(top: 16, leading: AppTheme.pageGutter, bottom: 8, trailing: AppTheme.pageGutter)
+            )
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.plain)
+        .listSectionSpacing(8)
         .scrollContentBackground(.hidden)
         .background(AppTheme.surface.ignoresSafeArea())
         .navigationTitle("settings")
@@ -121,8 +112,7 @@ struct SettingsView: View {
                 text: $draftCustom,
                 title: "custom text",
                 placeholder: "default custom text",
-                onCancel: { showCustomPrompt = false },
-                onSave: {
+                onDone: {
                     settingsStore.update {
                         $0.captionMode = .custom
                         $0.customDefault = Caption.truncateCaption(draftCustom)
@@ -131,6 +121,13 @@ struct SettingsView: View {
                 }
             )
         }
+    }
+
+    private func binding<T>(_ keyPath: WritableKeyPath<AppSettings, T>) -> Binding<T> {
+        Binding(
+            get: { settingsStore.settings[keyPath: keyPath] },
+            set: { value in settingsStore.update { $0[keyPath: keyPath] = value } }
+        )
     }
 
     private func handleCreditTap() {
@@ -148,32 +145,5 @@ struct SettingsView: View {
             guard !Task.isCancelled else { return }
             creditTapCount = 0
         }
-    }
-
-    private func checkRow(
-        title: String,
-        selected: Bool,
-        font: Font? = nil,
-        preserveCase: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(font ?? AppType.body(17))
-                    .textCase(preserveCase ? nil : .lowercase)
-                    .tracking(0.4)
-                    .foregroundStyle(AppTheme.textPrimary)
-                Spacer()
-                if selected {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .fontWeight(.semibold)
-                }
-            }
-            .frame(minHeight: AppTheme.hitTarget)
-        }
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 }

@@ -1,108 +1,134 @@
 import SwiftUI
 
-/// Cream milk chemistry reveal over a finished Polaroid print.
+/// Cream milk chemistry reveal — Polaroid fade, not a wipe.
 struct DevelopingOverlay: View {
     var reduceMotion: Bool
-    var duration: TimeInterval = 5
+    /// How long “developing…” stays up before the label fades out.
+    var labelHold: TimeInterval = 0.8
+    /// How long milk takes to clear after the label is gone (print fades in).
+    var fadeDuration: TimeInterval = 2.0
+    /// Hold opaque milk until the print exists.
+    var printReady: Bool = true
     var onFinished: (() -> Void)?
 
     @State private var milk = 1.0
-    /// Starts at the Polaroid's leading edge (not off-card left).
-    @State private var sweep: CGFloat = 0
     @State private var labelOpacity = 0.0
     @State private var labelTracking: CGFloat = 6
-    @State private var pulse = false
     @State private var didFinish = false
+    @State private var labelPhaseDone = false
+    @State private var fadeScheduled = false
+    @State private var hapticWorkItems: [DispatchWorkItem] = []
+
+    /// Full chemistry window used for countdown haptics (label + fade).
+    private var chemistryWindow: TimeInterval {
+        labelHold + fadeDuration
+    }
 
     var body: some View {
         ZStack {
-            // Opaque milk — print sits underneath and slowly comes up
             AppTheme.paper
                 .opacity(milk)
 
-            GeometryReader { geo in
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        Color.white.opacity(0.5),
-                        AppTheme.paper.opacity(0.3),
-                        .clear,
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: geo.size.width * 0.5)
-                .offset(x: sweep * geo.size.width)
-                .blendMode(.plusLighter)
-                .opacity(reduceMotion ? 0 : milk * 0.9)
-            }
-            .clipped()
-
-            VStack(spacing: 10) {
-                Text(Brand.developing)
-                    .font(AppType.display(20, weight: .medium))
-                    .appChromeText()
-                    .tracking(labelTracking)
-                    .foregroundStyle(AppTheme.graphite)
-                    .opacity(labelOpacity * milk)
-
-                Capsule()
-                    .fill(AppTheme.graphite.opacity(0.2))
-                    .frame(width: 72, height: 3)
-                    .overlay(alignment: .leading) {
-                        Capsule()
-                            .fill(AppTheme.graphite.opacity(0.65))
-                            .frame(width: pulse ? 72 : 12, height: 3)
-                    }
-                    .opacity(labelOpacity * milk)
-            }
-            .accessibilityLabel("Developing")
+            Text(Brand.developing)
+                .font(AppType.display(20, weight: .medium))
+                .appChromeText()
+                .tracking(labelTracking)
+                .foregroundStyle(AppTheme.graphite)
+                .opacity(labelOpacity)
+                .accessibilityLabel("Developing")
         }
         .clipped()
         .allowsHitTesting(true)
         .onAppear { run() }
+        .onChange(of: printReady) { _, ready in
+            if ready { scheduleFadeIfNeeded() }
+        }
+        .onDisappear { cancelPendingWork() }
     }
 
     private func run() {
         if reduceMotion {
+            if printReady {
+                milk = 0
+                finishOnce()
+            }
+            return
+        }
+
+        scheduleDevelopHaptics()
+
+        withAnimation(.easeOut(duration: 0.35)) {
+            labelOpacity = 1
+            labelTracking = 1.2
+        }
+
+        let labelItem = DispatchWorkItem {
+            withAnimation(.easeOut(duration: 0.35)) {
+                labelOpacity = 0
+            }
+            labelPhaseDone = true
+            scheduleFadeIfNeeded()
+        }
+        hapticWorkItems.append(labelItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + labelHold, execute: labelItem)
+
+        scheduleFadeIfNeeded()
+    }
+
+    /// Start the milk fade only after label hold AND print ready.
+    private func scheduleFadeIfNeeded() {
+        guard !didFinish, !fadeScheduled else { return }
+
+        if reduceMotion {
+            guard printReady else { return }
             milk = 0
             finishOnce()
             return
         }
 
-        Haptics.developTick()
+        guard printReady, labelPhaseDone else { return }
+        fadeScheduled = true
 
-        withAnimation(.easeOut(duration: 0.4)) {
-            labelOpacity = 1
-            labelTracking = 1.2
-        }
-
-        let clearDuration = max(duration - 0.2, 1)
-        withAnimation(.easeInOut(duration: clearDuration)) {
+        withAnimation(.easeInOut(duration: fadeDuration)) {
             milk = 0
-            sweep = 1.2
         }
 
-        withAnimation(.easeInOut(duration: clearDuration)) {
-            pulse = true
-        }
-
-        let tickTimes = [duration * 0.3, duration * 0.6, duration * 0.9]
-        for delay in tickTimes {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                Haptics.developTick()
-            }
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+        let doneItem = DispatchWorkItem {
             finishOnce()
         }
+        hapticWorkItems.append(doneItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDuration, execute: doneItem)
+    }
+
+    /// Rising chemistry pulses across the full label+fade window.
+    private func scheduleDevelopHaptics() {
+        let fractions: [Double] = [0, 0.2, 0.4, 0.6, 0.8]
+        for fraction in fractions {
+            let item = DispatchWorkItem {
+                Haptics.developPulse(at: fraction)
+            }
+            hapticWorkItems.append(item)
+            if fraction == 0 {
+                item.perform()
+            } else {
+                DispatchQueue.main.asyncAfter(
+                    deadline: .now() + chemistryWindow * fraction,
+                    execute: item
+                )
+            }
+        }
+    }
+
+    private func cancelPendingWork() {
+        hapticWorkItems.forEach { $0.cancel() }
+        hapticWorkItems.removeAll()
     }
 
     private func finishOnce() {
         guard !didFinish else { return }
         didFinish = true
-        Haptics.success()
+        cancelPendingWork()
+        Haptics.developDone()
         onFinished?()
     }
 }

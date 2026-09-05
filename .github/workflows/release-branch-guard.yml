@@ -1,0 +1,21 @@
+# Enforce: only `main` may open a PR into `release`.
+# `release` is a live-store ledger — never merge from `test` or feature branches.
+name: release-branch-guard
+
+on:
+  pull_request:
+    branches: [release]
+
+jobs:
+  release-branch-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only main may merge into release
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "main" ]; then
+            echo "::error::PRs into release must come from main (got '${HEAD_REF}'). release is merge-only from main after App Store Distribute."
+            exit 1
+          fi
+          echo "OK: head branch is main"

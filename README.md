@@ -2,7 +2,7 @@
 
 Take a photo. It comes out as a Polaroid. Date on the white strip. Save, share, or throw it away.
 
-**Version 1 is released.** **1.0.0** is live on the [App Store](https://apps.apple.com/app/postcardfilm/id6806571862). `main` is that build. Next version work happens on `test`.
+**Version 1 is released.** **1.0.0** is live on the [App Store](https://apps.apple.com/app/postcardfilm/id6806571862). **`release`** is that build; day-to-day work is on **`test`** (GitHub default). See [`docs/BRANCHING.md`](docs/BRANCHING.md).
 
 **Native iPhone app (SwiftUI).** Not affiliated with Polaroid or Fujifilm. Photos stay on your phone — no accounts, no cloud, no Android.
 
@@ -68,19 +68,20 @@ swift Scripts/verify_logic.swift
 
 ## Versioning
 
-- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) and `Info.plist` (`1.0.0` / `1`)
-- Shown in Settings footer as `postcardfilm. 1.0.0`
+- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) (`1.1.0` / `2`); `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`
+- Shown in Settings footer as `postcardfilm. 1.1.0 (2)`
 - Strategy (semver, What’s New voice, cut checklist): [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md)
 - Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md)
 
 ### Cut a release
 
-Follow the checklist in [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Short version:
+Branches: [`docs/BRANCHING.md`](docs/BRANCHING.md). Checklist: [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Short version:
 
-1. Move `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md`
+1. On **`test`**: move `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md`
 2. Draft short lowercase App Store “What’s New” from that section
-3. Bump `project.yml` + `Info.plist`, run `xcodegen generate`
-4. Row in `docs/VERSIONS.md`, tag `vx.y.z`, archive / upload
+3. Bump `project.yml` versions, run `xcodegen generate`
+4. Row in `docs/VERSIONS.md`; merge **`test` → `main`**; tag `vx.y.z`; archive / upload from **`main`**
+5. After App Store **Distribute**: merge **`main` → `release`** (merge commit only); stay on **`test`**
 
 ### Store screenshots
 

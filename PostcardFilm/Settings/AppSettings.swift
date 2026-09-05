@@ -8,7 +8,12 @@ struct AppSettings: Equatable {
     var customDefault: String = ""
     var saveOnCapture: Bool = false
     var captionFont: CaptionFont = .serif
+    var captionFontSize: CaptionFontSize = .medium
     var captionHighlight: Bool = true
+    /// Defaults for a new back note (Process). Do not rewrite existing prints.
+    var backFont: CaptionFont = .script
+    var backFontSize: CaptionFontSize = .medium
+    var backLetterCase: DateCaseStyle = .lowercase
 
     static let `default` = AppSettings()
 
@@ -56,7 +61,11 @@ private struct StoredSettings: Codable {
     var customDefault: String
     var saveOnCapture: Bool
     var captionFont: String?
+    var captionFontSize: String?
     var captionHighlight: Bool?
+    var backFont: String?
+    var backFontSize: String?
+    var backLetterCase: String?
 
     init(from settings: AppSettings) {
         captionMode = settings.captionMode.rawValue
@@ -65,7 +74,11 @@ private struct StoredSettings: Codable {
         customDefault = settings.customDefault
         saveOnCapture = settings.saveOnCapture
         captionFont = settings.captionFont.rawValue
+        captionFontSize = settings.captionFontSize.rawValue
         captionHighlight = settings.captionHighlight
+        backFont = settings.backFont.rawValue
+        backFontSize = settings.backFontSize.rawValue
+        backLetterCase = settings.backLetterCase.rawValue
     }
 
     func asAppSettings() -> AppSettings {
@@ -76,8 +89,19 @@ private struct StoredSettings: Codable {
             customDefault: customDefault,
             saveOnCapture: saveOnCapture,
             captionFont: CaptionFont(rawValue: captionFont ?? "") ?? .serif,
-            captionHighlight: captionHighlight ?? true
+            captionFontSize: CaptionFontSize(rawValue: captionFontSize ?? "") ?? .medium,
+            captionHighlight: captionHighlight ?? true,
+            backFont: CaptionFont(rawValue: backFont ?? "") ?? .script,
+            backFontSize: CaptionFontSize(rawValue: backFontSize ?? "") ?? .medium,
+            backLetterCase: DateCaseStyle(rawValue: backLetterCase ?? "") ?? .lowercase
         )
+    }
+}
+
+extension AppSettings {
+    /// Decode persisted settings JSON (used by tests for missing-key defaults).
+    static func fromStoredJSON(_ data: Data) throws -> AppSettings {
+        try JSONDecoder().decode(StoredSettings.self, from: data).asAppSettings()
     }
 }
 
@@ -91,7 +115,7 @@ enum AppVersion {
     }
 
     static var label: String {
-        "\(Brand.wordmark) \(marketing)"
+        "\(Brand.wordmark) \(marketing) (\(build))"
     }
 
     static let credit = Brand.credit

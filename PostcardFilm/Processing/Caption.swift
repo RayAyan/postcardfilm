@@ -93,6 +93,41 @@ enum CaptionFont: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Strip caption point-size relative to the Polaroid strip height.
+enum CaptionFontSize: String, Codable, CaseIterable, Identifiable {
+    case small
+    case medium
+    case large
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .small: return "small"
+        case .medium: return "medium"
+        case .large: return "large"
+        }
+    }
+
+    /// Multiplier of strip height used when burning the caption.
+    var stripScale: CGFloat {
+        switch self {
+        case .small: return 0.24
+        case .medium: return 0.30
+        case .large: return 0.38
+        }
+    }
+
+    /// Multiplier of strip height used for back-note body size (medium matches legacy 0.22).
+    var backBodyScale: CGFloat {
+        switch self {
+        case .small: return 0.18
+        case .medium: return 0.22
+        case .large: return 0.30
+        }
+    }
+}
+
 enum Caption {
     /// Front strip custom text — short enough to look like a Polaroid caption.
     /// Date mode is not truncated to this length.
@@ -128,7 +163,7 @@ enum Caption {
         let raw: String
         switch format {
         case .long:
-            raw = "\(d) \(months[m]) \(y)"
+            raw = "\(pad2(d)) \(months[m]) \(y)"
         case .short:
             raw = "\(pad2(m + 1)).\(pad2(d)).\(String(String(y).suffix(2)))"
         case .iso:
@@ -178,5 +213,51 @@ enum Caption {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.string(from: date)
+    }
+
+    /// True when front strip drafts differ from what is already burned on the record.
+    static func frontBurnNeeded(
+        record: PolaroidRecord,
+        mode: CaptionMode,
+        customText: String,
+        font: CaptionFont,
+        fontSize: CaptionFontSize,
+        letterCase: DateCaseStyle,
+        dateFormat: DateFormatOption,
+        highlight: Bool
+    ) -> Bool {
+        if mode != record.captionMode
+            || font != record.captionFont
+            || fontSize != record.captionFontSize
+            || letterCase != record.captionLetterCase
+            || dateFormat != record.dateFormat
+            || highlight != record.captionHighlight
+        {
+            return true
+        }
+        if mode == .custom {
+            let draftCaption = letterCase.apply(truncateCaption(customText))
+            return draftCaption != record.caption
+        }
+        return false
+    }
+
+    /// True when back note drafts differ from what is already burned on the record.
+    static func backBurnNeeded(
+        record: PolaroidRecord,
+        note: String,
+        font: CaptionFont,
+        fontSize: CaptionFontSize,
+        letterCase: DateCaseStyle
+    ) -> Bool {
+        let trimmed = truncateBackNote(note)
+        let cased = letterCase.apply(trimmed)
+        let normalized: String? = cased.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? nil
+            : cased
+        return normalized != record.backNote
+            || font != record.backFont
+            || fontSize != record.backFontSize
+            || letterCase != record.backLetterCase
     }
 }

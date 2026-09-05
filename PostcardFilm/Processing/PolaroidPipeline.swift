@@ -10,6 +10,9 @@ enum PolaroidPipeline {
         let polaroidPNG: Data
         let caption: String
         let captionMode: CaptionMode
+        let filmStock: FilmStock
+        /// Per-print expression strength (1.0 = full stock / legacy).
+        let filmStrength: Double
     }
 
     static func processCapture(
@@ -19,8 +22,12 @@ enum PolaroidPipeline {
         dateCase: DateCaseStyle = .lowercase,
         customText: String,
         captionFont: CaptionFont = .serif,
+        captionFontSize: CaptionFontSize = .medium,
         captionHighlight: Bool = true,
-        date: Date = Date()
+        date: Date = Date(),
+        filmStock: FilmStock? = nil,
+        filmStrength: Double? = nil,
+        serendipitySeed: String = ""
     ) throws -> Result {
         let caption = Caption.resolveCaptionText(
             mode: captionMode,
@@ -33,11 +40,17 @@ enum PolaroidPipeline {
         guard let jpeg = square.jpegData(compressionQuality: 0.92) else {
             throw PipelineError.encodeFailed
         }
+        let stock = filmStock ?? FilmStock.draw()
+        let strength = filmStrength ?? FilmExpression.resolve(seed: serendipitySeed, stock: stock)
         let polaroid = try renderPolaroid(
             square: square,
             caption: caption,
             captionFont: captionFont,
-            captionHighlight: captionHighlight
+            captionFontSize: captionFontSize,
+            captionHighlight: captionHighlight,
+            filmStock: stock,
+            filmStrength: strength,
+            serendipitySeed: serendipitySeed
         )
         guard let png = polaroid.pngData() else {
             throw PipelineError.encodeFailed
@@ -46,7 +59,9 @@ enum PolaroidPipeline {
             originalJPEG: jpeg,
             polaroidPNG: png,
             caption: caption,
-            captionMode: captionMode
+            captionMode: captionMode,
+            filmStock: stock,
+            filmStrength: strength
         )
     }
 
@@ -57,8 +72,12 @@ enum PolaroidPipeline {
         dateCase: DateCaseStyle = .lowercase,
         customText: String,
         captionFont: CaptionFont = .serif,
+        captionFontSize: CaptionFontSize = .medium,
         captionHighlight: Bool = true,
-        date: Date
+        date: Date,
+        filmStock: FilmStock = .onestep,
+        filmStrength: Double = FilmExpression.legacyDefault,
+        serendipitySeed: String = ""
     ) throws -> (png: Data, caption: String) {
         guard let square = UIImage(data: squareJPEG) else {
             throw PipelineError.decodeFailed
@@ -74,7 +93,11 @@ enum PolaroidPipeline {
             square: square,
             caption: caption,
             captionFont: captionFont,
-            captionHighlight: captionHighlight
+            captionFontSize: captionFontSize,
+            captionHighlight: captionHighlight,
+            filmStock: filmStock,
+            filmStrength: filmStrength,
+            serendipitySeed: serendipitySeed
         )
         guard let png = polaroid.pngData() else {
             throw PipelineError.encodeFailed
@@ -106,28 +129,48 @@ enum PolaroidPipeline {
         }
     }
 
-    static func applyGrade(to image: UIImage) throws -> UIImage {
+    static func applyGrade(to image: UIImage, recipe: FilmRecipe) throws -> UIImage {
         guard let ciInput = CIImage(image: image) else { throw PipelineError.decodeFailed }
 
         let expose = CIFilter.exposureAdjust()
         expose.inputImage = ciInput
-        expose.ev = Float(Grade.exposureEV())
+        expose.ev = Float(recipe.exposureEV + recipe.flashCenterLift * 0.55)
         let exposed = expose.outputImage ?? ciInput
 
-        let matrix = Grade.colorMatrix()
-        let filter = CIFilter.colorMatrix()
-        filter.inputImage = exposed
-        filter.rVector = CIVector(x: matrix.r.0, y: matrix.r.1, z: matrix.r.2, w: matrix.r.3)
-        filter.gVector = CIVector(x: matrix.g.0, y: matrix.g.1, z: matrix.g.2, w: matrix.g.3)
-        filter.bVector = CIVector(x: matrix.b.0, y: matrix.b.1, z: matrix.b.2, w: matrix.b.3)
-        filter.aVector = CIVector(x: 0, y: 0, z: 0, w: 1)
-        filter.biasVector = CIVector(x: matrix.bias.0, y: matrix.bias.1, z: matrix.bias.2, w: 0)
+        let matrix = recipe.colorMatrix
+        let colorMatrix = CIFilter.colorMatrix()
+        colorMatrix.inputImage = exposed
+        colorMatrix.rVector = CIVector(x: matrix.r.0, y: matrix.r.1, z: matrix.r.2, w: matrix.r.3)
+        colorMatrix.gVector = CIVector(x: matrix.g.0, y: matrix.g.1, z: matrix.g.2, w: matrix.g.3)
+        colorMatrix.bVector = CIVector(x: matrix.b.0, y: matrix.b.1, z: matrix.b.2, w: matrix.b.3)
+        colorMatrix.aVector = CIVector(x: 0, y: 0, z: 0, w: 1)
+        colorMatrix.biasVector = CIVector(x: matrix.bias.0, y: matrix.bias.1, z: matrix.bias.2, w: 0)
+        let matrixed = colorMatrix.outputImage ?? exposed
 
-        let graded = filter.outputImage.map(saturateShadows) ?? filter.outputImage
+        var toned = matrixed
+        // CIHighlightShadowAdjust: highlightAmount default 1.0, shadowAmount default 0.0.
+        if abs(recipe.highlightAmount - 1.0) > 0.001 || abs(recipe.shadowAmount) > 0.001 {
+            let hs = CIFilter.highlightShadowAdjust()
+            hs.inputImage = toned
+            hs.highlightAmount = Float(recipe.highlightAmount)
+            hs.shadowAmount = Float(recipe.shadowAmount)
+            toned = hs.outputImage ?? toned
+        }
+
+        if abs(recipe.contrast - 1.0) > 0.001 || abs(recipe.saturation - 1.0) > 0.001 {
+            let controls = CIFilter.colorControls()
+            controls.inputImage = toned
+            controls.contrast = Float(recipe.contrast)
+            controls.saturation = Float(recipe.saturation)
+            controls.brightness = 0
+            toned = controls.outputImage ?? toned
+        }
+
+        let graded = saturateShadows(toned, knobs: recipe.shadowSaturation)
 
         let blur = CIFilter.gaussianBlur()
         blur.inputImage = graded
-        blur.radius = 0.55
+        blur.radius = Float(recipe.blurRadius)
 
         guard let blurred = blur.outputImage?.cropped(to: ciInput.extent),
               let cg = context.createCGImage(blurred, from: blurred.extent)
@@ -137,10 +180,16 @@ enum PolaroidPipeline {
         return UIImage(cgImage: cg)
     }
 
-    /// Boosts saturation only where the frame is dark, leaving sky and cream highlights alone.
-    private static func saturateShadows(_ image: CIImage) -> CIImage {
-        let knobs = Grade.shadowSaturation()
+    /// House-stock convenience for tests / scripts that still call the old API.
+    static func applyGrade(to image: UIImage) throws -> UIImage {
+        try applyGrade(to: image, recipe: .onestep)
+    }
 
+    /// Boosts saturation only where the frame is dark, leaving sky and cream highlights alone.
+    private static func saturateShadows(
+        _ image: CIImage,
+        knobs: (amount: Double, maskGamma: Double)
+    ) -> CIImage {
         let saturated = CIFilter.colorControls()
         saturated.inputImage = image
         saturated.saturation = Float(knobs.amount)
@@ -171,9 +220,22 @@ enum PolaroidPipeline {
         square: UIImage,
         caption: String,
         captionFont: CaptionFont = .serif,
-        captionHighlight: Bool = true
+        captionFontSize: CaptionFontSize = .medium,
+        captionHighlight: Bool = true,
+        filmStock: FilmStock = .onestep,
+        filmStrength: Double = FilmExpression.legacyDefault,
+        serendipitySeed: String = ""
     ) throws -> UIImage {
-        let graded = try applyGrade(to: square)
+        let scene = FilmScene.measure(square)
+        let base = filmStock.recipe(meanLuma: scene.meanLuma, centerBias: scene.centerBias)
+        let expressed = FilmExpression.apply(base, strength: filmStrength, stock: filmStock)
+        let recipe = FilmSerendipity.vary(
+            expressed,
+            seed: serendipitySeed,
+            stock: filmStock,
+            strength: filmStrength
+        )
+        let graded = try applyGrade(to: square, recipe: recipe)
         let layout = FrameGeometry.computeFrameLayout(imageSide: FrameConstants.imageSide)
         let canvasSize = CGSize(width: layout.canvasWidth, height: layout.canvasHeight)
         let format = UIGraphicsImageRendererFormat()
@@ -194,14 +256,35 @@ enum PolaroidPipeline {
             )
             graded.draw(in: imageRect)
 
-            if let vignette = makeVignette(in: imageRect) {
+            if recipe.vignetteStrength > 0.01,
+               let vignette = makeVignette(in: imageRect, strength: recipe.vignetteStrength)
+            {
                 vignette.draw(in: imageRect, blendMode: .multiply, alpha: 1)
             }
-            if let leak = makeLightLeak(in: imageRect) {
-                leak.draw(in: imageRect, blendMode: .screen, alpha: 0.55)
+            if recipe.flashAlpha > 0.01,
+               let flash = makeFlashFill(in: imageRect)
+            {
+                flash.draw(in: imageRect, blendMode: .screen, alpha: recipe.flashAlpha)
             }
-            if let bloom = makeHighlightBloom(in: imageRect) {
-                bloom.draw(in: imageRect, blendMode: .screen, alpha: 0.7)
+            if recipe.leakAlpha > 0.01,
+               let leak = makeLightLeak(in: imageRect)
+            {
+                leak.draw(in: imageRect, blendMode: .screen, alpha: recipe.leakAlpha)
+            }
+            if recipe.bloomAlpha > 0.01,
+               let bloom = makeHighlightBloom(in: imageRect)
+            {
+                bloom.draw(in: imageRect, blendMode: .screen, alpha: recipe.bloomAlpha)
+            }
+            if recipe.edgeBurnAmount > 0.01,
+               let burn = makeEdgeBurn(in: imageRect, amount: recipe.edgeBurnAmount, seed: serendipitySeed)
+            {
+                burn.draw(in: imageRect, blendMode: .multiply, alpha: 1)
+            }
+            if recipe.grainAmount > 0.01,
+               let grain = makeSoftGrain(in: imageRect, amount: recipe.grainAmount, seed: serendipitySeed)
+            {
+                grain.draw(in: imageRect, blendMode: .overlay, alpha: recipe.grainAmount)
             }
 
             cg.setStrokeColor(UIColor(red: 180 / 255, green: 170 / 255, blue: 155 / 255, alpha: 0.55).cgColor)
@@ -210,7 +293,7 @@ enum PolaroidPipeline {
 
             guard !caption.isEmpty else { return }
 
-            let fontSize = CGFloat(layout.stripHeight) * 0.30
+            let fontSize = CGFloat(layout.stripHeight) * captionFontSize.stripScale
             let font = captionFont.uiFont(size: fontSize)
             let attrs: [NSAttributedString.Key: Any] = [
                 .font: font,
@@ -246,10 +329,13 @@ enum PolaroidPipeline {
     /// Cream reverse of the print — blank stock with a handwritten note area.
     static func renderBack(
         note: String,
-        font: CaptionFont = .script
+        font: CaptionFont = .script,
+        fontSize: CaptionFontSize = .medium,
+        letterCase: DateCaseStyle = .lowercase
     ) throws -> UIImage {
         let trimmed = Caption.truncateBackNote(note)
         guard !trimmed.isEmpty else { throw PipelineError.encodeFailed }
+        let display = letterCase.apply(trimmed)
 
         let layout = FrameGeometry.computeFrameLayout(imageSide: FrameConstants.imageSide)
         let canvasSize = CGSize(width: layout.canvasWidth, height: layout.canvasHeight)
@@ -271,7 +357,7 @@ enum PolaroidPipeline {
                 height: canvasSize.height - margin * 2 - brandReserve
             )
 
-            let bodySize = max(36, CGFloat(layout.stripHeight) * 0.22)
+            let bodySize = max(36, CGFloat(layout.stripHeight) * fontSize.backBodyScale)
             let bodyFont = font.uiFont(size: bodySize)
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = .left
@@ -284,7 +370,7 @@ enum PolaroidPipeline {
                 .paragraphStyle: paragraph,
                 .kern: font == .typewriter ? 0.4 : -0.2,
             ]
-            let attributed = NSAttributedString(string: trimmed, attributes: attrs)
+            let attributed = NSAttributedString(string: display, attributes: attrs)
             attributed.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
 
             Self.drawBackWordmark(canvasSize: canvasSize, margin: margin)
@@ -339,15 +425,17 @@ enum PolaroidPipeline {
         mark.draw(at: markOrigin, withAttributes: markAttrs)
     }
 
-    private static func makeVignette(in rect: CGRect) -> UIImage? {
+    private static func makeVignette(in rect: CGRect, strength: CGFloat = 1) -> UIImage? {
+        let edgeAlpha = min(0.72, 0.38 * strength)
+        let softStart = max(0.28, 0.5 - 0.12 * (strength - 1))
         let renderer = UIGraphicsImageRenderer(size: rect.size)
         return renderer.image { ctx in
             let cg = ctx.cgContext
             let colors = [
                 UIColor.clear.cgColor,
-                UIColor(red: 40 / 255, green: 30 / 255, blue: 20 / 255, alpha: 0.38).cgColor,
+                UIColor(red: 40 / 255, green: 30 / 255, blue: 20 / 255, alpha: edgeAlpha).cgColor,
             ] as CFArray
-            let locations: [CGFloat] = [0.5, 1]
+            let locations: [CGFloat] = [softStart, 1]
             guard let gradient = CGGradient(
                 colorsSpace: CGColorSpaceCreateDeviceRGB(),
                 colors: colors,
@@ -360,6 +448,34 @@ enum PolaroidPipeline {
                 startRadius: 0,
                 endCenter: center,
                 endRadius: max(rect.width, rect.height) * 0.72,
+                options: [.drawsAfterEndLocation]
+            )
+        }
+    }
+
+    /// Soft cream flash fill from center — subtle, not a white stamp.
+    private static func makeFlashFill(in rect: CGRect) -> UIImage? {
+        let renderer = UIGraphicsImageRenderer(size: rect.size)
+        return renderer.image { ctx in
+            let cg = ctx.cgContext
+            let colors = [
+                UIColor(red: 1.0, green: 0.97, blue: 0.92, alpha: 0.42).cgColor,
+                UIColor(red: 0.96, green: 0.94, blue: 0.90, alpha: 0.14).cgColor,
+                UIColor.clear.cgColor,
+            ] as CFArray
+            let locations: [CGFloat] = [0, 0.4, 1]
+            guard let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors,
+                locations: locations
+            ) else { return }
+            let center = CGPoint(x: rect.width / 2, y: rect.height * 0.42)
+            cg.drawRadialGradient(
+                gradient,
+                startCenter: center,
+                startRadius: 0,
+                endCenter: center,
+                endRadius: max(rect.width, rect.height) * 0.52,
                 options: [.drawsAfterEndLocation]
             )
         }
@@ -418,6 +534,91 @@ enum PolaroidPipeline {
                 options: [.drawsAfterEndLocation]
             )
         }
+    }
+
+    /// Very soft monochrome grain — seeded so reburn matches.
+    private static func makeSoftGrain(in rect: CGRect, amount: CGFloat, seed: String) -> UIImage? {
+        let side = max(64, min(256, Int(max(rect.width, rect.height) / 8)))
+        var rng = SeededRNG(seed: grainSeed(seed, tag: "grain"))
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        for i in stride(from: 0, to: pixels.count, by: 4) {
+            let n = UInt8(20 + Int(rng.nextUnit() * 215))
+            pixels[i] = n
+            pixels[i + 1] = n
+            pixels[i + 2] = n
+            pixels[i + 3] = 255
+        }
+        let data = Data(pixels)
+        guard let provider = CGDataProvider(data: data as CFData),
+              let cgImage = CGImage(
+                  width: side,
+                  height: side,
+                  bitsPerComponent: 8,
+                  bitsPerPixel: 32,
+                  bytesPerRow: side * 4,
+                  space: CGColorSpaceCreateDeviceRGB(),
+                  bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                  provider: provider,
+                  decode: nil,
+                  shouldInterpolate: true,
+                  intent: .defaultIntent
+              )
+        else { return nil }
+
+        let renderer = UIGraphicsImageRenderer(size: rect.size)
+        return renderer.image { _ in
+            UIImage(cgImage: cgImage).draw(in: CGRect(origin: .zero, size: rect.size))
+            _ = amount
+        }
+    }
+
+    /// Soft irregular edge burn (roller / undeveloped-edge feel) — not a hard vignette ring.
+    private static func makeEdgeBurn(in rect: CGRect, amount: CGFloat, seed: String) -> UIImage? {
+        var rng = SeededRNG(seed: grainSeed(seed, tag: "burn"))
+        let edges = [0, 1, 2, 3].shuffled(using: &rng).prefix(rng.nextUnit() < 0.55 ? 1 : 2)
+        let strength = min(0.35, 0.12 + amount * 0.7)
+        let band = max(rect.width, rect.height) * (0.08 + amount * 0.12)
+
+        let renderer = UIGraphicsImageRenderer(size: rect.size)
+        return renderer.image { ctx in
+            let cg = ctx.cgContext
+            for edge in edges {
+                let warm = UIColor(red: 48 / 255, green: 32 / 255, blue: 22 / 255, alpha: strength)
+                let colors = [warm.cgColor, UIColor.clear.cgColor] as CFArray
+                let locations: [CGFloat] = [0, 1]
+                guard let gradient = CGGradient(
+                    colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                    colors: colors,
+                    locations: locations
+                ) else { continue }
+
+                let start: CGPoint
+                let end: CGPoint
+                switch edge {
+                case 0: // top
+                    start = CGPoint(x: rect.width / 2, y: 0)
+                    end = CGPoint(x: rect.width / 2, y: band)
+                case 1: // bottom
+                    start = CGPoint(x: rect.width / 2, y: rect.height)
+                    end = CGPoint(x: rect.width / 2, y: rect.height - band)
+                case 2: // leading
+                    start = CGPoint(x: 0, y: rect.height / 2)
+                    end = CGPoint(x: band, y: rect.height / 2)
+                default: // trailing
+                    start = CGPoint(x: rect.width, y: rect.height / 2)
+                    end = CGPoint(x: rect.width - band, y: rect.height / 2)
+                }
+                cg.drawLinearGradient(gradient, start: start, end: end, options: [])
+            }
+        }
+    }
+
+    private static func grainSeed(_ seed: String, tag: String) -> UInt64 {
+        var hash: UInt64 = 0xC0FF_EEF1_1A00
+        for byte in (seed + "|" + tag).utf8 {
+            hash = hash &* 33 &+ UInt64(byte)
+        }
+        return hash == 0 ? 1 : hash
     }
 }
 
