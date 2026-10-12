@@ -40,8 +40,12 @@ final class FilmDebugSession: ObservableObject {
     @Published var stock: FilmStock = .onestep
     @Published var band: ExpressionBand = .medium
 
-    /// Visible only on Debug builds from the `test` git branch.
-    static var isAvailable: Bool { BuildChannel.isTestBranch }
+    /// Hard off — do not show Manual film chrome (even on local `test` Debug runs).
+    /// Flip to `true` only while actively calibrating; still requires `BuildChannel.isTestBranch`.
+    private static let menuEnabled = false
+
+    /// Visible only when explicitly enabled AND Debug AND git branch `test`.
+    static var isAvailable: Bool { menuEnabled && BuildChannel.isTestBranch }
 
     /// `nil` → pipeline draws stock as usual.
     var overrideStock: FilmStock? {

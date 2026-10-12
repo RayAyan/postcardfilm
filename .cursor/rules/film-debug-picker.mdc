@@ -10,7 +10,7 @@ Developer-only **Auto / Manual** film control on Home. Forces one of the five pa
 ## When it may exist
 
 - Compile only under `#if DEBUG` (entire UI + `FilmDebugSession` in [`FilmDebugPicker.swift`](PostcardFilm/Features/Home/FilmDebugPicker.swift)).
-- Visible at runtime only when [`BuildChannel.isTestBranch`](PostcardFilm/Support/BuildChannel.generated.swift) is `true` (generated from git branch `test` by [`Scripts/generate-build-channel.sh`](Scripts/generate-build-channel.sh)).
+- Hard kill switch `FilmDebugSession.menuEnabled` must be `true` **and** [`BuildChannel.isTestBranch`](PostcardFilm/Support/BuildChannel.generated.swift) (git branch `test`). Default `menuEnabled = false` — menu stays hidden until you flip it for calibration.
 - Day-to-day work stays on git branch **`test`**. See [`docs/BRANCHING.md`](docs/BRANCHING.md).
 
 ## Never

@@ -90,23 +90,16 @@ final class FilmDebugPickerTests: XCTestCase {
     }
 
     @MainActor
-    func testManualOverridesWhenAvailable() {
+    func testManualOverridesStayNilWhileMenuDisabled() {
         #if DEBUG
-        guard BuildChannel.isTestBranch else {
-            // Non-test Debug builds must never force film — skip override asserts.
-            XCTAssertFalse(FilmDebugSession.isAvailable)
-            return
-        }
+        // menuEnabled is hard-off — chip and overrides must stay dormant.
+        XCTAssertFalse(FilmDebugSession.isAvailable)
         let session = FilmDebugSession()
         session.mode = .manual
         session.stock = .natura
         session.band = .gentle
-        XCTAssertEqual(session.overrideStock, .natura)
-        XCTAssertEqual(session.overrideStrength ?? -1, 0.52, accuracy: 0.0001)
-
-        session.stock = .onestep
-        session.band = .medium
-        XCTAssertEqual(session.overrideStrength ?? -1, 0.72, accuracy: 0.0001)
+        XCTAssertNil(session.overrideStock)
+        XCTAssertNil(session.overrideStrength)
         #endif
     }
 
