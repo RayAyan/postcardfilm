@@ -20,13 +20,14 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ## [1.2.0] - 2026-10-12
 
-Better color chemistry — denser darks, warmer reds, quieter greens. Prints still never leave the phone.
+Better color chemistry — denser darks, warmer reds, quieter greens. Smoother gallery; a soft fold when there's a note.
 
 <!-- App Store What’s New:
 better color chemistry.
 denser darks. warmer reds. quieter greens.
+better performance. smoother scroll.
+a little fold when there's a note behind.
 "color is my day-long obsession, joy and torment." — monet
-your prints stay on the phone.
 -->
 
 ### Added
