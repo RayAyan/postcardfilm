@@ -94,7 +94,7 @@ All lowercase. Examples from `Brand`:
 
 ## Polaroid look
 
-See [`CALIBRATION.md`](CALIBRATION.md). **the pack** (1.1.0): five camera-named stocks drawn at shutter — no picker, no settings row, no strip label. Users never see the emulsion name.
+See [`CALIBRATION.md`](CALIBRATION.md). **the pack** (1.2.0): five film looks drawn at shutter — no picker, no settings row, no strip label. Users never see the emulsion name.
 
 ## Changing the design
 

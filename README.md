@@ -68,8 +68,9 @@ swift Scripts/verify_logic.swift
 
 ## Versioning
 
-- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) (`1.1.0` / `2`); `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`
-- Shown in Settings footer as `postcardfilm. 1.1.0 (2)`
+- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) (`1.2.0` / `3`); `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`
+- Shown in Settings footer as `postcardfilm. 1.2.0 (3)`
+- Bump helper: [`Scripts/cut-version.sh`](Scripts/cut-version.sh) (`./Scripts/cut-version.sh 1.2.1` or `minor` / `patch`)
 - Strategy (semver, What’s New voice, cut checklist): [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md)
 - Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md) · open bugs: [`docs/BUGS.md`](docs/BUGS.md) · motions: [`docs/ANIMATIONS.md`](docs/ANIMATIONS.md)
 
@@ -77,11 +78,10 @@ swift Scripts/verify_logic.swift
 
 Branches: [`docs/BRANCHING.md`](docs/BRANCHING.md). Checklist: [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Short version:
 
-1. On **`test`**: move `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md`
-2. Draft short lowercase App Store “What’s New” from that section
-3. Bump `project.yml` versions, run `xcodegen generate`
-4. Row in `docs/VERSIONS.md`; merge **`test` → `main`**; tag `vx.y.z`; archive / upload from **`main`**
-5. After App Store **Distribute**: merge **`main` → `release`** (merge commit only); stay on **`test`**
+1. On **`test`**: curate `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md` + short What’s New HTML comment
+2. `./Scripts/cut-version.sh x.y.z --notes "…"` (bumps `project.yml`, `xcodegen`, `docs/VERSIONS.md`)
+3. Commit; merge **`test` → `main`**; tag `vx.y.z`; **Archive from `main`** → TestFlight / App Store
+4. After you say **production shipped**: merge **`main` → `release`** (merge commit only); stay on **`test`**
 
 ### Store screenshots
 

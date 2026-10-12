@@ -63,18 +63,29 @@ brighter film grade. gallery select that actually selects.
 
 Paste that into App Store Connect → version → What’s New. Keep the full detail in `CHANGELOG.md`.
 
+## Automate the bump
+
+[`Scripts/cut-version.sh`](../Scripts/cut-version.sh) updates `project.yml`, runs `xcodegen generate`, and inserts a [`VERSIONS.md`](VERSIONS.md) row:
+
+```bash
+./Scripts/cut-version.sh 1.2.0 --build 3 --notes "five quiet film looks"
+# or: ./Scripts/cut-version.sh minor
+# or: ./Scripts/cut-version.sh patch
+```
+
+Build number increments by default. Changelog bullets are still curated by hand (quality over dump).
+
 ## Cut a release (checklist)
 
 1. **QA** — walk [`HIG_CHECKLIST.md`](HIG_CHECKLIST.md) on a physical iPhone.
-2. **Changelog** — move `[Unreleased]` bullets into `## [x.y.z] - YYYY-MM-DD`. Leave an empty `[Unreleased]` stub.
-3. **What’s New** — draft the short App Store blurb (save it under the release heading as an HTML comment, or in the GitHub Release body).
-4. **Version** — set `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](../project.yml). Run `xcodegen generate`. (`Info.plist` picks them up automatically.)
-5. **Index** — append a row to [`VERSIONS.md`](VERSIONS.md).
-6. **Links** — update compare URLs at the bottom of `CHANGELOG.md`.
-7. **Tag** — `git tag -a vx.y.z -m "postcardfilm x.y.z"` on the ship commit (after `main` is the candidate), push tags.
-8. **GitHub Release** — paste changelog section + What’s New.
-9. **Archive** — Xcode → Archive from **`main`** → upload. Attach build in App Store Connect.
-10. **After Distribute** — PR **`main` → `release`** (merge commit only). See [`BRANCHING.md`](BRANCHING.md).
+2. **Changelog** — move `[Unreleased]` bullets into `## [x.y.z] - YYYY-MM-DD`. Leave an empty `[Unreleased]` stub. Put the short What’s New in an HTML comment under that heading.
+3. **Version** — `./Scripts/cut-version.sh x.y.z --notes "…"`. (`Info.plist` picks versions up automatically.)
+4. **Links** — update compare URLs at the bottom of `CHANGELOG.md`.
+5. **Promote** — PR **`test` → `main`**. Switch back to **`test`**.
+6. **Tag** — `git tag -a vx.y.z -m "postcardfilm x.y.z"` on the ship commit on `main`, push tags.
+7. **GitHub Release** — paste changelog section + What’s New.
+8. **Archive** — Xcode → Archive from **`main`** → upload. Attach build in App Store Connect.
+9. **After production** — only when the human says production shipped: PR **`main` → `release`** (merge commit only). See [`BRANCHING.md`](BRANCHING.md).
 
 ## Branch habit
 
