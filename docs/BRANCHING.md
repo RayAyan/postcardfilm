@@ -38,10 +38,10 @@ Still **no commits on `release`**. Fix on `test`, land on `main`, ship, then mer
 
 If `main` already has a next minor you have **not** distributed, do **not** merge `main` → `release` until `main` matches the binary you actually distributed.
 
-## Current (after 1.0.0 ship)
+## Current
 
 - **`release`** points at **1.0.0** (build 1) — tag `v1.0.0` — live on the App Store.
-- **`main`** is the App Store / TestFlight candidate line (promote from `test` when ready).
+- **`main` / `test`** candidate line: **1.2.0** (build 3) — five film looks, notes fold, calmer gallery. Archive from **`main`** for TestFlight.
 - **`test`** stays the day-to-day branch.
 
 See also: [CHANGELOG_STRATEGY.md](CHANGELOG_STRATEGY.md) (semver, What’s New, cut checklist), [`.cursor/rules/branching.mdc`](../.cursor/rules/branching.mdc).

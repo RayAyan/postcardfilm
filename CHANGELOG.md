@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 How we cut releases, write App Store “What’s New”, and bump versions:
-[`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md).
+[`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Version bump helper: [`Scripts/cut-version.sh`](Scripts/cut-version.sh).
 
 ## [Unreleased]
 
@@ -14,81 +14,44 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Added
 
-- Pack DEBUG artist labels (Matisse / Van Gogh / Picasso / Monet / Rembrandt); Matisse uses gentle–bold expression; seeded depth kiss (contrast + darker darks); Monet retuned to cooler olive Polaroid foliage
-- DEBUG + `test`-branch Home film debug picker (auto / manual force of pack stock + expression band) for calibration; compiled out of Release
-- Gallery note cue: soft-yellow shaded dog-ear fold on cells with a back note; Process shows centered `there's a note behind.` above the print and highlights flip when a note exists
-- Download saves front **and** back when a note exists (gallery multi-download + Process)
-- Swipe down on a gallery-opened print to return to the gallery
-- Gallery scroll rail (tracks finger scroll, expands on press, aligned to the photo grid)
-- Open bugs list ([`docs/BUGS.md`](docs/BUGS.md)) with gallery persistence as a standing rule
-- Persisted per-print `dateFormat` so reburn / strip edits keep the format used at capture
-- Persisted per-print `captionLetterCase` so strip letter case round-trips in Process
-- Resilient capture ladder (retry + flash-off fallback) and pre-armed flash settings
-- **the pack** — five film stocks (`onestep` / Matisse, `sun660` / Van Gogh, `mini9` / Picasso, `natura` / Monet, `m6` / Rembrandt); at shutter the app draws one at random; user never chooses; stock persisted so reburn keeps the emulsion
-- Adaptive film expression — invisible per-print strength (~65% gentle / ~25% medium / ~10% bold) softens harsh knobs while keeping stock color identity; strength persisted for reburn
-- Strip caption highlight default (on / off) in Settings + per-print in the strip editor sheet
-- Strip caption size default (small / medium / large) in Settings + per-print in Process
-- Gallery multi-download in select mode
-- Process share via the system share sheet (visible face)
-- Settings defaults subheading (`your defaults for new prints.`)
-- Centered delete confirm modal (Process + Gallery) with delete / go back
-- Feature coverage map ([`docs/FEATURE_COVERAGE.md`](docs/FEATURE_COVERAGE.md)) linking tests, HIG, and design rules
-
 ### Changed
-
-- Film pack retuned as a Kodachrome family — denser darks, forward reds/oranges, no fake corner leak/bloom, rim-only vignette; five cousins kept with brightness chance (grain overlay removed — looked pixelated on bright whites)
-- Gallery / Process thumbs decode downsampled off the main thread (grid vs process pixel tiers) so large albums stay smooth on older devices; prints still survive iOS and app upgrades in Documents
-- Gallery scroll rail expands clearly on press, scrubs by content offset, and overlays the trailing gutter without shifting the photo grid
-- Animation inventory ([`docs/ANIMATIONS.md`](docs/ANIMATIONS.md)); smoother Process flip on older devices (lighter toolbar ease + shadow while spinning — shutter / developing unchanged)
-- Font pickers show **serif / script / typewriter** only (`modern` still decodes for older prints)
-- Process strip / back edit sheets prefer scrolling the list over resizing the sheet detent
-- App Store screenshots refreshed (no status bar; developing milk UI; original sample prints)
-- Process print uses more screen width (`processCardGutter`) with a shared canvas aspect lock — no 340pt height cap
-- Flip covers burned text instantly and syncs face/hit-target from angle; live reburns no longer tear down `PolaroidThumb` via `.id`
-- Settings / Process sheets share `PrintSectionHeader` + plain-list gutters; Settings subheading stays one line
-- Front strip editor includes date-format chips; per-print `captionLetterCase` persists; back-note sentence case burns correctly
-- Settings / Gallery share a **20pt** page gutter; section headers and chips align with the large title
-- Settings section order: strip text → date format → font → size → letter case → highlight (last; hidden when blank)
-- Process strip / back note editors apply live; toolbar is **done** only (no save/cancel)
-- Process action bar: share on the left; delete + download (`photo.badge.arrow.down`) on the right — highlighter control removed
-- Camera session no longer stops mid-flash when Process pushes (deferred stop while capture in flight)
-- Settings footer shows marketing version **and** build (`postcardfilm. 1.1.0 (2)`); `Info.plist` reads versions from `project.yml` build settings
-- Expanded HIG checklist into a full front-end regression set; DESIGN documents alignment, flash, facing, chips, delete modal
-- Home tagline shortened to `take a photo.`
-- Settings exposes strip text defaults only (no film back note block); back note style is per-print after capture
-- Flash is on/off only (no auto): rear camera fires hardware flash; front camera uses screen flash (white overlay + full brightness); control stays enabled on every facing — never “unavailable”
-- Pack stocks pushed apart with hard tone roles (bright flash / punchy Instax / flat Fuji / dense Leica); Original (`onestep`) stays the frozen 1.0.0 look
-- Pack softened toward real Polaroid (muted contrast, subtler flash fill, soft grain + edge burn, per-print serendipity); Original still frozen
-- Pack pulled closer to Original — less contrast/crush/flash/vignette; color cousins kept; Original still frozen
-- Calibration is three layers: scene adaptation → stock identity → weighted expression (plus scaled serendipity)
-- Capture haptics: shutter on press; rising develop pulses across ~2.8s Polaroid fade; reveal thump when milk clears
-- Capture transition: quick shutter flash → postcard milk → “developing…” 0.8s → 2s slow print fade-in (no wipe)
-- Gallery Process: page-style swipe between prints (not nav pop); capture develop flow unchanged
-- Process: tap white strip to edit caption; tap back face for note; shared print-text style controls (font/size/case, optional highlight) across Settings front + Process sheets
-- Print-text options use compact chip grids (mode / font / highlight / size / case / date format) in Settings and Process sheets
-- Back note gains size + letter case (per print)
-- Camera preview resumes after backgrounding / session interruption
-- Long dates zero-pad the day (`03 jan 2026`)
-- Gallery select uses an inline title (no truncated “S…”) and caches thumbs for smoother scroll
-- Front camera preview and capture are mirrored (WYSIWYG selfie)
 
 ### Fixed
 
-- Gallery Process paging no longer sticks between two prints (lazy paging `ScrollView` instead of a 3-page `TabView` window)
-- Gallery Process paging stays snappy on large albums (lazy pages, in-memory reload, neighbor thumb prefetch)
-- Gallery scroll rail is visible on long albums (and system indicator remains for short lists)
-- Gallery grid scroll no longer fights cell taps on older iPhones (scroll-friendly tap / long-press instead of `Button`)
-- Opening or dismissing the strip / back-note editor with no edits no longer re-burns the print (removes the front-image flicker on Done)
-- Settings no longer shows duplicated font / size / letter case grids (removed film back note defaults block)
-- Print flip covers burned strip/note text during the turn so caption does not warp mid-spin
-- Front camera + screen flash: wait for session/AE after brightness jump and silently retry once on not-ready so the first shutter captures
-- Camera flip no longer unmirrors the current preview before switching; selfie preview/capture stay mirrored, rear does not
-- Gallery restores prints still on disk when `index.json` fails to decode or omits folders (unknown film/font values no longer empty the gallery)
-- Rear flash no longer fails capture when Process pushes mid-exposure
+## [1.2.0] - 2026-10-12
 
-### Removed
+Five quiet film looks, a calmer gallery, notes you can feel — prints still never leave the phone.
 
-- Process bottom-left highlighter control (highlight lives in Settings + strip sheet)
+<!-- App Store What’s New:
+five quiet looks of film. denser darks. warmer reds.
+a soft fold when there's a note behind.
+gallery that keeps up — your prints stay on the phone.
+-->
+
+### Added
+
+- **the pack** — five film looks drawn at shutter (never named in the product UI); look + strength persist so reburn matches
+- Soft per-print expression (usually gentle, sometimes bold) so harsh knobs don’t hit every frame
+- Gallery note cue — soft-yellow dog-ear when a print has a back note; Process shows `there's a note behind.`
+- Download saves front **and** back when a note exists
+- Swipe down on a gallery-opened print to return to the gallery
+- Gallery scroll rail for long albums
+- Strip caption size + highlight defaults in Settings; share sheet; multi-download; centered delete confirm
+
+### Changed
+
+- Film chemistry retuned toward denser darks and warmer reds — no fake corner leak, cream bloom, or grain overlay
+- Gallery / Process thumbs decode downsampled off the main thread so large albums stay smooth; prints still live in Documents across updates
+- Smoother Process flip; font pickers are serif / script / typewriter only
+- Process strip / back editors apply live; more of the screen for the print
+
+### Fixed
+
+- Process paging no longer sticks between two prints
+- Gallery scroll / rail / tap fights on older phones and long albums
+- Opening strip or note sheets without edits no longer reburns (no flicker on Done)
+- Gallery restores prints still on disk when the index is thin or fails to decode
+
 ## [1.0.0] - 2026-09-01
 
 First public App Store release.
@@ -146,5 +109,6 @@ hello. take a photo. write on the strip. keep a little stack of prints that neve
 - Settings **save to photos when i shoot**
 - Settings disclaimer / not-affiliated line (triple-tap credit mailto remains)
 
-[Unreleased]: https://github.com/RayAyan/postcardfilm/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/RayAyan/postcardfilm/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/RayAyan/postcardfilm/compare/v1.0.0...v1.2.0
 [1.0.0]: https://github.com/RayAyan/postcardfilm/releases/tag/v1.0.0
