@@ -20,12 +20,13 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ## [1.2.0] - 2026-10-12
 
-Five quiet film looks, a calmer gallery, notes you can feel — prints still never leave the phone.
+Better color chemistry — denser darks, warmer reds, quieter greens. Prints still never leave the phone.
 
 <!-- App Store What’s New:
-five quiet looks of film. denser darks. warmer reds.
-a soft fold when there's a note behind.
-gallery that keeps up — your prints stay on the phone.
+better color chemistry.
+denser darks. warmer reds. quieter greens.
+"color is my day-long obsession, joy and torment." — monet
+your prints stay on the phone.
 -->
 
 ### Added
