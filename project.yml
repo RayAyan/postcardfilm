@@ -32,6 +32,12 @@ targets:
       - path: PostcardFilm/Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
         type: file
+    preBuildScripts:
+      - name: Generate BuildChannel
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          "${SRCROOT}/Scripts/generate-build-channel.sh"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.postcardfilm.app

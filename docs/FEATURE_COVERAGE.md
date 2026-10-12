@@ -13,13 +13,18 @@ Maps shipping features to logic tests, front-end checks ([`HIG_CHECKLIST.md`](HI
 | Gallery | Grid + leading subtext | `FrameGeometryTests` (frame) | HIG Gallery | DESIGN Alignment |
 | Gallery | Empty state | — | HIG Gallery | Brand |
 | Gallery | Select / long-press / batch delete | `GallerySelectionTests` | HIG Gallery | DESIGN Strip and reverse |
-| Gallery | Multi-download | — | HIG Gallery | DESIGN Strip and reverse |
+| Gallery | Analog scroll rail + scroll-friendly cells | — | HIG Gallery | DESIGN Alignment / [`docs/BUGS.md`](BUGS.md) |
+| Gallery / Process | Downsampled thumb cache (grid 480 / process 1400) + async load | `ThumbnailCacheTests` | HIG Performance | ANIMATIONS decode rule |
+| Gallery | Note dog-ear fold on cells with back note | — | HIG Gallery | DESIGN Strip and reverse |
+| Gallery | Multi-download (front + back when noted) | — | HIG Gallery | DESIGN Strip and reverse |
 | Gallery | Index / recovery | `PolaroidIndexTests` | HIG Identity persistence | — |
 | Gallery | Persistence until uninstall | `GalleryPersistenceTests` | HIG Identity | DESIGN Brand / gallery-persistence rule |
 | Process | Strip/back edit (live apply, done only), flip | `CaptionTests` (dirty-check) | HIG Process | DESIGN Strip and reverse |
-| Process | Gallery paging | — | HIG Process | DESIGN Strip and reverse |
+| Process | Gallery paging + swipe-down dismiss | `GalleryPagingTests` | HIG Process | DESIGN Strip and reverse / [`docs/BUGS.md`](BUGS.md) |
 | Process | Highlight via Settings / strip sheet | `PipelineSmokeTests` | HIG Process / Settings | DESIGN Strip and reverse |
-| Process | Share left / delete + download right | pipeline | HIG Process | DESIGN Strip and reverse |
+| Process | Share left / delete + download (both faces if note) | pipeline | HIG Process | DESIGN Strip and reverse |
+| Process | Edit sheet scroll prefers list | — | HIG Process | DESIGN Strip and reverse |
+| Settings | Font chips serif / script / typewriter | `CaptionTests` | HIG Settings | DESIGN Typography |
 | Process | Centered delete modal | `BrandTests` (copy) | HIG Process / Gallery | DESIGN Alignment / Delete |
 | Process | Caption / back note limits | `CaptionTests` | HIG Process | DESIGN Strip and reverse |
 | Settings | Strip defaults + chips | `AppSettingsTests` | HIG Settings | DESIGN + print-text rule |

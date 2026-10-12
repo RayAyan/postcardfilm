@@ -14,6 +14,10 @@ struct HomeView: View {
     @State private var shutterPressed = false
     @State private var captureError: String?
     @State private var showCaptureAlert = false
+    #if DEBUG
+    @StateObject private var filmDebug = FilmDebugSession()
+    @State private var showFilmDebugSheet = false
+    #endif
 
     private var reduceMotion: Bool {
         UIAccessibility.isReduceMotionEnabled
@@ -56,6 +60,11 @@ struct HomeView: View {
             } message: {
                 Text(captureError ?? "could not take the photo. try again.")
             }
+            #if DEBUG
+            .sheet(isPresented: $showFilmDebugSheet) {
+                FilmDebugPickerSheet(session: filmDebug)
+            }
+            #endif
             .task {
                 if usesCamera {
                     await camera.requestPermissionIfNeeded()
@@ -102,6 +111,16 @@ struct HomeView: View {
                     .multilineTextAlignment(.center)
                     .padding(.top, AppTheme.taglineGap)
                     .padding(.horizontal, 24)
+
+                #if DEBUG
+                if FilmDebugSession.isAvailable {
+                    FilmDebugChip(session: filmDebug) {
+                        showFilmDebugSheet = true
+                    }
+                    .padding(.top, 10)
+                    .disabled(capturing)
+                }
+                #endif
 
                 Spacer(minLength: 20)
 
@@ -327,6 +346,13 @@ struct HomeView: View {
             }
 
             let settings = settingsStore.settings
+            #if DEBUG
+            let forcedStock = filmDebug.overrideStock
+            let forcedStrength = filmDebug.overrideStrength
+            #else
+            let forcedStock: FilmStock? = nil
+            let forcedStrength: Double? = nil
+            #endif
             let processed = try await Task.detached(priority: .userInitiated) {
                 try PolaroidPipeline.processCapture(
                     image: photo,
@@ -337,6 +363,8 @@ struct HomeView: View {
                     captionFont: settings.captionFont,
                     captionFontSize: settings.captionFontSize,
                     captionHighlight: settings.captionHighlight,
+                    filmStock: forcedStock,
+                    filmStrength: forcedStrength,
                     serendipitySeed: id
                 )
             }.value

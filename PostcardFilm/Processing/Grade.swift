@@ -1,6 +1,6 @@
 import Foundation
 
-/// Polaroid 600 color grade — pure functions.
+/// Kodachrome-family house grade — pure functions (tests + CI matrix source).
 struct RGB: Equatable {
     var r: Double
     var g: Double
@@ -27,62 +27,63 @@ enum Grade {
         0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
     }
 
-    /// Grade one pixel in 0–1 sRGB space (bright Polaroid / Huji-leaning recipe).
+    /// Grade one pixel in 0–1 sRGB — Kodachrome 64 grammar: dense darks, forward reds/oranges.
     static func gradePixel(_ input: RGB) -> RGB {
         var r = input.r
         var g = input.g
         var b = input.b
 
-        // Mild overall lift — Huji-like sunny exposure.
-        let exposure: Double = 0.10
+        // Sunny daylight lift — less than the old Polaroid fog.
+        let exposure: Double = 0.08
         r = clamp01(r + exposure)
-        g = clamp01(g + exposure * 0.95)
-        b = clamp01(b + exposure * 0.85)
+        g = clamp01(g + exposure * 0.92)
+        b = clamp01(b + exposure * 0.78)
 
         let L = luma(RGB(r: r, g: g, b: b))
 
-        // Chemical fog — lifted blacks, never true black.
-        let shadowLift = smoothstep(0.50, 0.0, L)
-        r = clamp01(r + 0.055 * shadowLift)
-        g = clamp01(g + 0.048 * shadowLift)
-        b = clamp01(b + 0.042 * shadowLift)
+        // Darks close down — tiny residual lift so blacks are not crushed to zero.
+        let shadowLift = smoothstep(0.42, 0.0, L)
+        r = clamp01(r + 0.018 * shadowLift)
+        g = clamp01(g + 0.016 * shadowLift)
+        b = clamp01(b + 0.014 * shadowLift)
 
-        r = sCurve(r, amount: 0.32)
-        g = sCurve(g, amount: 0.32)
-        b = sCurve(b, amount: 0.32)
+        r = sCurve(r, amount: 0.40)
+        g = sCurve(g, amount: 0.38)
+        b = sCurve(b, amount: 0.36)
 
-        // Soft contrast — Polaroid, not digital punch.
-        let contrast = 0.90
+        // Slide contrast — denser than Polaroid soft.
+        let contrast = 0.98
         r = clamp01((r - 0.5) * contrast + 0.5)
         g = clamp01((g - 0.5) * contrast + 0.5)
         b = clamp01((b - 0.5) * contrast + 0.5)
 
         let L2 = luma(RGB(r: r, g: g, b: b))
 
-        // Warm yellow midtones (Huji / 600).
+        // Forward reds / gold oranges (K64 long-red feel).
         let warm = smoothstep(0.12, 0.70, L2) * (1 - smoothstep(0.78, 1.0, L2))
-        r = clamp01(r * (1 + 0.12 * warm))
-        g = clamp01(g * (1 + 0.045 * warm))
-        b = clamp01(b * (1 - 0.07 * warm))
+        r = clamp01(r * (1 + 0.16 * warm))
+        g = clamp01(g * (1 + 0.05 * warm))
+        b = clamp01(b * (1 - 0.09 * warm))
 
-        // Mild midtone vibrance
+        // Midtone vibrance — reds denser than greens.
         let mid = smoothstep(0.18, 0.55, L2) * (1 - smoothstep(0.72, 0.96, L2))
-        let sat = 1 + 0.07 * mid
+        let sat = 1 + 0.10 * mid
         let gray = luma(RGB(r: r, g: g, b: b))
-        r = clamp01(gray + (r - gray) * sat)
+        r = clamp01(gray + (r - gray) * (sat + 0.04 * mid))
         g = clamp01(gray + (g - gray) * sat)
-        b = clamp01(gray + (b - gray) * sat)
+        b = clamp01(gray + (b - gray) * (sat - 0.02 * mid))
 
         // Cream highlights — never paper-white.
-        let hi = smoothstep(0.62, 1.0, L2)
-        r = clamp01(r * (1 - 0.035 * hi) + 0.95 * hi * 0.055)
-        g = clamp01(g * (1 - 0.045 * hi) + 0.91 * hi * 0.05)
-        b = clamp01(b * (1 - 0.09 * hi) + 0.84 * hi * 0.04)
+        let hi = smoothstep(0.58, 1.0, L2)
+        r = clamp01(r * (1 - 0.10 * hi) + 0.90 * hi * 0.04)
+        g = clamp01(g * (1 - 0.12 * hi) + 0.85 * hi * 0.035)
+        b = clamp01(b * (1 - 0.16 * hi) + 0.74 * hi * 0.03)
 
-        let cool = smoothstep(0.28, 0.0, L2)
-        r = clamp01(r - 0.01 * cool)
-        g = clamp01(g + 0.005 * cool)
-        b = clamp01(b + 0.016 * cool)
+        // Restrained blue in deep shadows — not teal-Fuji lift.
+        let cool = smoothstep(0.22, 0.0, L2)
+        r = clamp01(r - 0.008 * cool)
+        g = clamp01(g + 0.002 * cool)
+        b = clamp01(b + 0.008 * cool)
 
         return RGB(r: r, g: g, b: b)
     }
@@ -97,7 +98,7 @@ enum Grade {
         )
     }
 
-    /// Bright warm Polaroid look as CIColorMatrix + bias.
+    /// Kodachrome-family CIColorMatrix — forward red, restrained blue, modest warm bias.
     static func colorMatrix() -> (
         r: (Double, Double, Double, Double),
         g: (Double, Double, Double, Double),
@@ -105,20 +106,19 @@ enum Grade {
         bias: (Double, Double, Double)
     ) {
         (
-            r: (0.94, 0.09, 0.02, 0),
-            g: (0.04, 0.92, 0.04, 0),
-            b: (0.01, 0.06, 0.86, 0),
-            // Extra bias = sunny Huji lift.
-            bias: (0.08, 0.07, 0.05)
+            r: (1.02, 0.08, 0.01, 0),
+            g: (0.03, 0.94, 0.03, 0),
+            b: (0.00, 0.04, 0.88, 0),
+            bias: (0.055, 0.045, 0.028)
         )
     }
 
     /// Global exposure bump applied in the CI path (EV).
-    static func exposureEV() -> Double { 0.32 }
+    static func exposureEV() -> Double { 0.28 }
 
-    /// Extra colour for dark areas only, so shadowed frames stop reading flat.
+    /// Extra colour for dark areas only — denser reds in shadows without fogging blacks.
     /// `maskGamma` above 1 pulls the mask back toward true shadows.
     static func shadowSaturation() -> (amount: Double, maskGamma: Double) {
-        (amount: 1.18, maskGamma: 1.55)
+        (amount: 1.22, maskGamma: 1.62)
     }
 }

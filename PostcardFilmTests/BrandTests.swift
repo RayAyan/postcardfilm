@@ -36,6 +36,8 @@ final class BrandTests: XCTestCase {
         XCTAssertFalse(Brand.homeTagline.isEmpty)
         XCTAssertEqual(Brand.gallerySubtext, "prints you've kept.")
         XCTAssertEqual(Brand.settingsSubtext, "your defaults for new prints.")
+        XCTAssertEqual(Brand.noteBehindHint, "there's a note behind.")
+        XCTAssertEqual(Brand.noteBehindHint, Brand.noteBehindHint.lowercased())
         XCTAssertEqual(Brand.settingsSubtext, Brand.settingsSubtext.lowercased())
         XCTAssertEqual(Brand.homeTagline, Brand.homeTagline.lowercased())
         XCTAssertEqual(Brand.developing, Brand.developing.lowercased())

@@ -112,7 +112,7 @@ struct PrintTextStyleControls: View {
     var body: some View {
         Section {
             PrintChoiceGrid(
-                items: Array(CaptionFont.allCases),
+                items: CaptionFont.pickerCases,
                 title: { $0.label },
                 titleFont: { Font($0.previewFont(size: 15)) },
                 isSelected: { font == $0 },

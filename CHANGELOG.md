@@ -14,11 +14,18 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Added
 
+- Pack DEBUG artist labels (Matisse / Van Gogh / Picasso / Monet / Rembrandt); Matisse uses gentle–bold expression; seeded depth kiss (contrast + darker darks); Monet retuned to cooler olive Polaroid foliage
+- DEBUG + `test`-branch Home film debug picker (auto / manual force of pack stock + expression band) for calibration; compiled out of Release
+- Gallery note cue: soft-yellow shaded dog-ear fold on cells with a back note; Process shows centered `there's a note behind.` above the print and highlights flip when a note exists
+- Download saves front **and** back when a note exists (gallery multi-download + Process)
+- Swipe down on a gallery-opened print to return to the gallery
+- Gallery scroll rail (tracks finger scroll, expands on press, aligned to the photo grid)
+- Open bugs list ([`docs/BUGS.md`](docs/BUGS.md)) with gallery persistence as a standing rule
 - Persisted per-print `dateFormat` so reburn / strip edits keep the format used at capture
 - Persisted per-print `captionLetterCase` so strip letter case round-trips in Process
 - Resilient capture ladder (retry + flash-off fallback) and pre-armed flash settings
-- **the pack** — five camera-named film stocks (`onestep` / Original, `sun660`, `mini9`, `natura`, `m6`); at shutter the app draws one at random; user never chooses; stock persisted so reburn keeps the emulsion
-- Adaptive film expression — invisible per-print strength (~65% gentle / ~25% medium / ~10% bold) softens harsh knobs while keeping stock color identity; Original stays frozen; strength persisted for reburn
+- **the pack** — five film stocks (`onestep` / Matisse, `sun660` / Van Gogh, `mini9` / Picasso, `natura` / Monet, `m6` / Rembrandt); at shutter the app draws one at random; user never chooses; stock persisted so reburn keeps the emulsion
+- Adaptive film expression — invisible per-print strength (~65% gentle / ~25% medium / ~10% bold) softens harsh knobs while keeping stock color identity; strength persisted for reburn
 - Strip caption highlight default (on / off) in Settings + per-print in the strip editor sheet
 - Strip caption size default (small / medium / large) in Settings + per-print in Process
 - Gallery multi-download in select mode
@@ -29,6 +36,12 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Changed
 
+- Film pack retuned as a Kodachrome family — denser darks, forward reds/oranges, no fake corner leak/bloom, rim-only vignette; five cousins kept with brightness chance (grain overlay removed — looked pixelated on bright whites)
+- Gallery / Process thumbs decode downsampled off the main thread (grid vs process pixel tiers) so large albums stay smooth on older devices; prints still survive iOS and app upgrades in Documents
+- Gallery scroll rail expands clearly on press, scrubs by content offset, and overlays the trailing gutter without shifting the photo grid
+- Animation inventory ([`docs/ANIMATIONS.md`](docs/ANIMATIONS.md)); smoother Process flip on older devices (lighter toolbar ease + shadow while spinning — shutter / developing unchanged)
+- Font pickers show **serif / script / typewriter** only (`modern` still decodes for older prints)
+- Process strip / back edit sheets prefer scrolling the list over resizing the sheet detent
 - App Store screenshots refreshed (no status bar; developing milk UI; original sample prints)
 - Process print uses more screen width (`processCardGutter`) with a shared canvas aspect lock — no 340pt height cap
 - Flip covers burned text instantly and syncs face/hit-target from angle; live reburns no longer tear down `PolaroidThumb` via `.id`
@@ -61,6 +74,10 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Fixed
 
+- Gallery Process paging no longer sticks between two prints (lazy paging `ScrollView` instead of a 3-page `TabView` window)
+- Gallery Process paging stays snappy on large albums (lazy pages, in-memory reload, neighbor thumb prefetch)
+- Gallery scroll rail is visible on long albums (and system indicator remains for short lists)
+- Gallery grid scroll no longer fights cell taps on older iPhones (scroll-friendly tap / long-press instead of `Button`)
 - Opening or dismissing the strip / back-note editor with no edits no longer re-burns the print (removes the front-image flicker on Done)
 - Settings no longer shows duplicated font / size / letter case grids (removed film back note defaults block)
 - Print flip covers burned strip/note text during the turn so caption does not warp mid-spin

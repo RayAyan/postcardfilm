@@ -35,7 +35,9 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 - [ ] Select / deselect all; long-press enters select; tap toggles
 - [ ] Inline select title (not truncated)
 - [ ] Centered delete modal: 1 print → `are you sure, delete this print?`; many → `are you sure, delete n prints?`; **delete** + **go back**
-- [ ] Multi-download in select mode
+- [ ] Multi-download in select mode (front + back when a note exists)
+- [ ] Soft-yellow dog-ear fold on cells that have a back note; Process centered `there's a note behind.` + highlighted flip when a note exists
+- [ ] Long albums: trailing scroll rail overlays right gutter (grid gutters stay equal), thumb tracks scroll, expands on press, continuous scrub; short albums keep system indicator
 - [ ] Interactive pop gesture works
 
 ## Process
@@ -43,11 +45,13 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 - [ ] Front strip tap opens editor; photo area does not
 - [ ] Back face tap opens note editor; blank back shows wordmark
 - [ ] Flip animates (3D; Reduce Motion → fade); strip text covered during flip
-- [ ] Gallery paging between prints; capture flow is single-print
+- [ ] Gallery paging between prints snaps to one centered print (never stuck mid-page); capture flow is single-print
+- [ ] Swipe down from gallery Process returns to gallery; swipe up does nothing
 - [ ] Share on bottom left; delete + download (`photo.badge.arrow.down`) on the right — no highlighter control
 - [ ] Strip / back editors apply live; toolbar is **done** only (no save/cancel)
+- [ ] Strip / back sheet scroll feels smooth (list scroll preferred over detent fight)
 - [ ] Share sheet exports the **visible** face
-- [ ] Download saves the **visible** face
+- [ ] Download saves front, and back too when a note exists
 - [ ] Centered delete modal (singular copy); go back dismisses
 - [ ] Photos denied alert + Open Settings
 - [ ] Missing-print state; edit sheets + custom caption prompt (20 / 200)
@@ -57,6 +61,7 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 
 - [ ] Leading-aligned defaults subheading (`your defaults for new prints…`) on one line, shares 20pt edge with section content
 - [ ] Section order: strip text → date format (date mode) → font → size → letter case → highlight (hidden when blank)
+- [ ] Font chips are serif / script / typewriter only (no modern)
 - [ ] Strip text chip grids — not checkmarks/toggles
 - [ ] No film back note block (back style is per-print only)
 - [ ] Custom default preview row when mode is custom
@@ -78,11 +83,11 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 - [ ] Gallery cells announce print + caption (+ back note if present)
 - [ ] Delete modal: delete + go back labeled; dismissible
 - [ ] Flash VoiceOver label “Flash” + value on/off
-- [ ] Reduce Motion: shutter flash / developing / flip
+- [ ] Reduce Motion: shutter flash / developing / flip (inventory: [`ANIMATIONS.md`](ANIMATIONS.md) — shutter/develop frozen; flip shortens)
 - [ ] Graphite on cream readable on strip and back
 
 ## Identity
 
 - [ ] Home screen name: `postcardfilm`
 - [ ] Wordmark: `postcardfilm.` (lowercase, no underline)
-- [ ] Prints in Documents survive app updates, TestFlight, and Xcode Run (same bundle id) — only uninstall wipes; in-app delete is user-confirmed (`GalleryPersistenceTests`)
+- [ ] Prints in Documents survive app updates, TestFlight, iOS OS upgrades, and Xcode Run (same bundle id) — only uninstall wipes; in-app delete is user-confirmed (`GalleryPersistenceTests`)

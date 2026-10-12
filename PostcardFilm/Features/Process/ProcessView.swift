@@ -45,6 +45,8 @@ struct ProcessView: View {
     @State private var draftDateFormat: DateFormatOption = .long
     /// Which live editor last opened — used to flush the right drafts on dismiss.
     @State private var activeEditor: LiveEditorKind = .none
+    /// Interactive swipe-down dismiss (gallery Process only).
+    @State private var dismissDrag: CGFloat = 0
 
     private enum LiveEditorKind {
         case none, front, back
@@ -58,6 +60,15 @@ struct ProcessView: View {
         flipAngle >= 90
     }
 
+    /// Call out flip when a note is waiting on the reverse.
+    private var emphasizeFlipForNote: Bool {
+        record?.hasBackNote == true && !showingBackFace && !isDeveloping && !missing
+    }
+
+    private var flipChipEmphasized: Bool {
+        isFlipped || emphasizeFlipForNote
+    }
+
     private var galleryPagingEnabled: Bool {
         !openedFromCapture
             && !isDeveloping
@@ -67,6 +78,30 @@ struct ProcessView: View {
             && !showBackNoteSheet
             && !showDeleteConfirm
             && sharePayload == nil
+            && dismissDrag == 0
+    }
+
+    private var swipeDownDismissEnabled: Bool {
+        !openedFromCapture
+            && !missing
+            && !isDeveloping
+            && !isFlipping
+            && !showCaptionSheet
+            && !showBackNoteSheet
+            && !showDeleteConfirm
+            && sharePayload == nil
+    }
+
+    /// `scrollPosition` needs an optional id binding.
+    private var scrollPositionID: Binding<String?> {
+        Binding(
+            get: { currentID },
+            set: { newValue in
+                if let newValue, newValue != currentID {
+                    currentID = newValue
+                }
+            }
+        )
     }
 
     private var stripHeightFraction: CGFloat {
@@ -131,16 +166,16 @@ struct ProcessView: View {
                             .font(AppType.caption(13, weight: .semibold))
                             .appChromeText()
                     }
-                    .foregroundStyle(isFlipped ? AppTheme.accentText : AppTheme.textPrimary)
+                    .foregroundStyle(flipChipEmphasized ? AppTheme.accentText : AppTheme.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background {
                         Capsule(style: .continuous)
-                            .fill(isFlipped ? AppTheme.accentFill : AppTheme.surfaceRaised)
+                            .fill(flipChipEmphasized ? AppTheme.accentFill : AppTheme.surfaceRaised)
                             .overlay(
                                 Capsule(style: .continuous)
                                     .strokeBorder(
-                                        isFlipped
+                                        flipChipEmphasized
                                             ? AppTheme.accentFill
                                             : AppTheme.hairline.opacity(0.9),
                                         lineWidth: 1
@@ -149,12 +184,12 @@ struct ProcessView: View {
                     }
                     .scaleEffect(isFlipping ? 0.94 : 1)
                     .animation(
-                        reduceMotion ? .none : .spring(response: 0.28, dampingFraction: 0.72),
+                        reduceMotion ? .none : .easeOut(duration: 0.15),
                         value: isFlipping
                     )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isFlipped ? "flip to front" : "flip")
+                .accessibilityLabel(flipAccessibilityLabel)
                 .disabled(isDeveloping || isFlipping || showCaptionSheet || showBackNoteSheet || missing)
             }
         }
@@ -191,6 +226,7 @@ struct ProcessView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            .presentationContentInteraction(.scrolls)
             .onChange(of: draftMode) { _, _ in scheduleFrontApply(delayMs: 300) }
             .onChange(of: draftCustom) { _, _ in scheduleFrontApply(delayMs: 600) }
             .onChange(of: draftFont) { _, _ in scheduleFrontApply(delayMs: 300) }
@@ -209,6 +245,7 @@ struct ProcessView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            .presentationContentInteraction(.scrolls)
             .onChange(of: draftBackNote) { _, _ in scheduleBackApply(delayMs: 600) }
             .onChange(of: draftBackFont) { _, _ in scheduleBackApply(delayMs: 300) }
             .onChange(of: draftBackFontSize) { _, _ in scheduleBackApply(delayMs: 300) }
@@ -217,13 +254,20 @@ struct ProcessView: View {
         .sheet(item: $sharePayload) { payload in
             ActivityShareSheet(items: payload.items)
         }
-        .onAppear { reload() }
+        .onAppear {
+            // Repair index once on enter; paging thereafter stays in-memory (read-only).
+            store.reload()
+            reload(preferMemory: true)
+            prefetchNeighborThumbs()
+        }
         .onChange(of: store.items) { _, _ in
-            reload()
+            reload(preferMemory: true)
+            prefetchNeighborThumbs()
         }
         .onChange(of: currentID) { _, _ in
             resetTransientStateForNeighbor()
-            reload()
+            reload(preferMemory: true)
+            prefetchNeighborThumbs()
         }
         .onDisappear {
             saveResetTask?.cancel()
@@ -233,25 +277,45 @@ struct ProcessView: View {
 
     private var content: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 12)
+            if emphasizeFlipForNote {
+                // Centered under the wordmark — quieter than trailing; flip chip carries the CTA.
+                Text(Brand.noteBehindHint)
+                    .font(AppType.caption(11))
+                    .appChromeText()
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AppTheme.pageGutter)
+                    .padding(.top, 4)
+                    .padding(.bottom, 2)
+                    .accessibilityLabel(Brand.noteBehindHint)
+            }
+
+            Spacer(minLength: emphasizeFlipForNote ? 6 : 12)
 
             Group {
                 if openedFromCapture {
                     editableCard(id: currentID, record: record, showDevelop: isDeveloping)
                         .padding(.horizontal, AppTheme.processCardGutter)
                 } else {
-                    TabView(selection: $currentID) {
-                        ForEach(store.items) { item in
-                            editableCard(
-                                id: item.id,
-                                record: item.id == currentID ? record : item,
-                                showDevelop: false
-                            )
-                            .padding(.horizontal, AppTheme.processCardGutter)
-                            .tag(item.id)
+                    ScrollView(.horizontal) {
+                        LazyHStack(spacing: 0) {
+                            ForEach(store.items) { item in
+                                editableCard(
+                                    id: item.id,
+                                    record: item.id == currentID ? record : item,
+                                    showDevelop: false
+                                )
+                                .padding(.horizontal, AppTheme.processCardGutter)
+                                .containerRelativeFrame(.horizontal)
+                                .id(item.id)
+                            }
                         }
+                        .scrollTargetLayout()
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .scrollIndicators(.hidden)
+                    .scrollTargetBehavior(.paging)
+                    .scrollPosition(id: scrollPositionID)
                     .scrollDisabled(!galleryPagingEnabled)
                 }
             }
@@ -285,7 +349,11 @@ struct ProcessView: View {
                         systemName: saved ? "checkmark" : "photo.badge.arrow.down",
                         label: saved
                             ? "saved to photos"
-                            : (showingBackFace ? "download back to photos" : "download front to photos")
+                            : (
+                                record?.hasBackNote == true
+                                    ? "download print and note to photos"
+                                    : "download print to photos"
+                            )
                     ) {
                         Task { await download() }
                     }
@@ -295,6 +363,52 @@ struct ProcessView: View {
             .padding(.horizontal, AppTheme.pageGutter)
             .padding(.bottom, 28)
         }
+        .offset(y: max(0, dismissDrag))
+        .opacity(dismissDrag > 0 ? max(0.55, 1 - Double(dismissDrag) / 420) : 1)
+        .simultaneousGesture(swipeDownDismissGesture)
+    }
+
+    private var swipeDownDismissGesture: some Gesture {
+        DragGesture(minimumDistance: 28)
+            .onChanged { value in
+                guard swipeDownDismissEnabled else { return }
+                let dy = value.translation.height
+                let dx = abs(value.translation.width)
+                // Strong vertical dominance so horizontal paging keeps ownership.
+                guard dy > 0, dy > dx * 1.6 else {
+                    if dismissDrag != 0 { dismissDrag = 0 }
+                    return
+                }
+                dismissDrag = dy
+            }
+            .onEnded { value in
+                guard swipeDownDismissEnabled else {
+                    dismissDrag = 0
+                    return
+                }
+                let dy = value.translation.height
+                let dx = abs(value.translation.width)
+                let predicted = value.predictedEndTranslation.height
+                let shouldDismiss = dy > dx * 1.6
+                    && (dy > 110 || (dy > 64 && predicted > 320))
+                if shouldDismiss {
+                    if reduceMotion {
+                        dismissDrag = 0
+                        dismiss()
+                    } else {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            dismissDrag = UIScreen.main.bounds.height * 0.9
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                            dismiss()
+                        }
+                    }
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        dismissDrag = 0
+                    }
+                }
+            }
     }
 
     @ViewBuilder
@@ -330,7 +444,14 @@ struct ProcessView: View {
 
     private var hintText: String {
         if isDeveloping { return Brand.developing }
-        return showingBackFace ? Brand.backHint : Brand.processHint
+        if showingBackFace { return Brand.backHint }
+        return Brand.processHint
+    }
+
+    private var flipAccessibilityLabel: String {
+        if isFlipped { return "flip to front" }
+        if emphasizeFlipForNote { return "flip, note on the back" }
+        return "flip"
     }
 
     private func cardAccessibility(_ record: PolaroidRecord?) -> String {
@@ -405,7 +526,15 @@ struct ProcessView: View {
             axis: (x: 0, y: 1, z: 0),
             perspective: 0.6
         )
-        .shadow(color: .black.opacity(0.35), radius: 10, y: 5)
+        // Full shadow only on the current page; neighbors stay flat for older GPUs.
+        // Collapse further while the current card is spinning.
+        .shadow(
+            color: id == currentID
+                ? .black.opacity(isFlipping ? 0.08 : 0.35)
+                : .clear,
+            radius: id == currentID ? (isFlipping ? 2 : 10) : 0,
+            y: id == currentID ? (isFlipping ? 1 : 5) : 0
+        )
     }
 
     /// Paper cover over burned caption / note so text doesn't warp mid-flip.
@@ -426,7 +555,11 @@ struct ProcessView: View {
     }
 
     private func frontFace(id: String, showDevelop: Bool) -> some View {
-        PolaroidThumb(url: store.polaroidURL(for: id), refreshToken: id == currentID ? bust : 0)
+        PolaroidThumb(
+            url: store.polaroidURL(for: id),
+            refreshToken: id == currentID ? bust : 0,
+            maxPixel: ThumbnailCache.processMaxPixel
+        )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay {
                 if showDevelop {
@@ -447,7 +580,11 @@ struct ProcessView: View {
     private func backFace(id: String, record: PolaroidRecord) -> some View {
         let url = store.backURL(for: id)
         if record.hasBackNote, FileManager.default.fileExists(atPath: url.path) {
-            PolaroidThumb(url: url, refreshToken: id == currentID ? backBust : 0)
+            PolaroidThumb(
+                url: url,
+                refreshToken: id == currentID ? backBust : 0,
+                maxPixel: ThumbnailCache.processMaxPixel
+            )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             blankBackPlaceholder
@@ -548,8 +685,17 @@ struct ProcessView: View {
         backBust = 0
     }
 
-    private func reload() {
-        if let item = store.polaroid(id: currentID) {
+    /// Resolve the active print. Prefer in-memory `store.items` on swipe; disk+repair only as fallback.
+    private func reload(preferMemory: Bool) {
+        let item: PolaroidRecord?
+        if preferMemory {
+            item = store.items.first(where: { $0.id == currentID })
+                ?? store.polaroid(id: currentID)
+        } else {
+            item = store.polaroid(id: currentID)
+        }
+
+        if let item {
             let wasNil = record == nil || record?.id != item.id
             record = item
             missing = false
@@ -568,6 +714,13 @@ struct ProcessView: View {
         } else {
             missing = true
         }
+    }
+
+    private func prefetchNeighborThumbs() {
+        guard !openedFromCapture else { return }
+        let urls = GalleryPagingLogic.neighborIDs(items: store.items, currentID: currentID)
+            .map { store.polaroidURL(for: $0) }
+        ThumbnailCache.prefetch(urls: urls, refreshToken: 0, maxPixel: ThumbnailCache.processMaxPixel)
     }
 
     private func maybeRevealPrint() {
@@ -601,24 +754,28 @@ struct ProcessView: View {
         isSaving = true
         defer { isSaving = false }
 
+        let front = store.polaroidURL(for: currentID)
+        let back = store.backURL(for: currentID)
+        let hasNoteFile = record?.hasBackNote == true
+            && FileManager.default.fileExists(atPath: back.path)
+
         let result: PhotoLibrarySaveResult
-        if showingBackFace {
-            let back = store.backURL(for: currentID)
-            if FileManager.default.fileExists(atPath: back.path) {
-                result = await PhotoLibrarySaver.saveImage(at: back)
-            } else {
-                do {
-                    let image = try PolaroidPipeline.renderBlankBack()
-                    guard let png = image.pngData() else { throw PipelineError.encodeFailed }
-                    result = await PhotoLibrarySaver.saveImage(data: png)
-                } catch {
-                    alertMessage = error.localizedDescription
-                    showAlert = true
-                    return
-                }
+        if hasNoteFile {
+            // Noted prints: always save front + back together.
+            result = await PhotoLibrarySaver.saveImages(at: [front, back])
+        } else if showingBackFace {
+            // Blank reverse — render on the fly (no note file).
+            do {
+                let image = try PolaroidPipeline.renderBlankBack()
+                guard let png = image.pngData() else { throw PipelineError.encodeFailed }
+                result = await PhotoLibrarySaver.saveImage(data: png)
+            } catch {
+                alertMessage = error.localizedDescription
+                showAlert = true
+                return
             }
         } else {
-            result = await PhotoLibrarySaver.saveImage(at: store.polaroidURL(for: currentID))
+            result = await PhotoLibrarySaver.saveImage(at: front)
         }
 
         switch result {
@@ -751,7 +908,7 @@ struct ProcessView: View {
             }
             backBust += 1
             lastApplyCompletedAt = Date()
-            reload()
+            reload(preferMemory: true)
         } catch {
             alertMessage = error.localizedDescription
             showAlert = true
@@ -804,7 +961,7 @@ struct ProcessView: View {
             bust += 1
             ThumbnailCache.invalidate(url: store.polaroidURL(for: currentID))
             lastApplyCompletedAt = Date()
-            reload()
+            reload(preferMemory: true)
         } catch {
             alertMessage = error.localizedDescription
             showAlert = true

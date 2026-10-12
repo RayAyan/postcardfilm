@@ -71,7 +71,7 @@ swift Scripts/verify_logic.swift
 - Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) (`1.1.0` / `2`); `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`
 - Shown in Settings footer as `postcardfilm. 1.1.0 (2)`
 - Strategy (semver, What’s New voice, cut checklist): [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md)
-- Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md)
+- Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md) · open bugs: [`docs/BUGS.md`](docs/BUGS.md) · motions: [`docs/ANIMATIONS.md`](docs/ANIMATIONS.md)
 
 ### Cut a release
 
@@ -98,7 +98,7 @@ Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 1
 
 ## Gallery persistence
 
-**Hard rule:** while postcardfilm stays installed (`com.postcardfilm.app`), prints in `Documents/polaroids` survive TestFlight, App Store updates, Xcode Run, and any branch. Uninstall is the only full wipe. In-app delete after confirm is the only intentional delete. Agents: `.cursor/rules/gallery-persistence.mdc`. Tests: `GalleryPersistenceTests`.
+**Hard rule:** while postcardfilm stays installed (`com.postcardfilm.app`), prints in `Documents/polaroids` survive TestFlight, App Store updates, **iOS OS upgrades**, Xcode Run, and any branch. Apple keeps the app’s Documents container across iOS version jumps when the app is not uninstalled; the same bundle id is required. Uninstall is the only full wipe. In-app delete after confirm is the only intentional delete. Agents: `.cursor/rules/gallery-persistence.mdc`. Tests: `GalleryPersistenceTests`.
 
 ## Privacy
 
@@ -108,7 +108,7 @@ Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 1
 
 ## Device QA / HIG
 
-Walk [`docs/HIG_CHECKLIST.md`](docs/HIG_CHECKLIST.md) on a physical iPhone. Grade notes: [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Design system: [`docs/DESIGN.md`](docs/DESIGN.md).
+Walk [`docs/HIG_CHECKLIST.md`](docs/HIG_CHECKLIST.md) on a physical iPhone. Grade notes: [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Design system: [`docs/DESIGN.md`](docs/DESIGN.md). Motion inventory: [`docs/ANIMATIONS.md`](docs/ANIMATIONS.md).
 
 ## License
 
