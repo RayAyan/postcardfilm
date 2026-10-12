@@ -253,6 +253,32 @@ final class PolaroidIndexTests: XCTestCase {
         XCTAssertEqual(recovered.first?.filmStock, .onestep)
     }
 
+    /// Multi-version jump: sparse legacy row + unknown enums + interim fields must not wipe prints.
+    func testParseThreeVersionsAgoFixtureStillRecovers() {
+        let raw = """
+        {"version":1,"items":[\
+        {"id":"legacy","createdAt":"2025-01-01T00:00:00.000Z","caption":"hi","captionMode":"date","captionFont":"comic","filmStock":"original-pack"},\
+        {"id":"interim","createdAt":"2025-06-01T00:00:00.000Z","displayDate":"2025-06-01T00:00:00.000Z","note":"lake day"}\
+        ]}
+        """
+        let index = PolaroidIndexLogic.parse(raw)
+        XCTAssertEqual(Set(index.items.map(\.id)), Set(["legacy", "interim"]))
+        XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "legacy")?.filmStock, .onestep)
+        XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "legacy")?.captionFont, .serif)
+        XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "interim")?.captionMode, .date)
+        XCTAssertEqual(PolaroidIndexLogic.find(in: index, id: "interim")?.backNote, "lake day")
+
+        let recovered = PolaroidIndexLogic.recoverMissingRecords(
+            existing: index.items,
+            folderIDsWithPNG: [
+                (id: "legacy", createdAt: "2025-01-01T00:00:00.000Z"),
+                (id: "interim", createdAt: "2025-06-01T00:00:00.000Z"),
+                (id: "disk-only", createdAt: "2025-12-01T00:00:00.000Z"),
+            ]
+        )
+        XCTAssertEqual(Set(recovered.map(\.id)), Set(["legacy", "interim", "disk-only"]))
+    }
+
     func testPrintRouteSources() {
         XCTAssertTrue(PrintRoute.captured(id: "a").openedFromCapture)
         XCTAssertFalse(PrintRoute.saved(id: "a").openedFromCapture)

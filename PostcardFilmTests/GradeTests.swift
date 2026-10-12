@@ -6,12 +6,13 @@ final class GradeTests: XCTestCase {
         0.2126 * Double(r) + 0.7152 * Double(g) + 0.0722 * Double(b)
     }
 
-    func testLiftsNearBlack() {
+    func testNearBlackStaysDenseNotFogged() {
         let out = Grade.gradeRgb255(r: 0, g: 0, b: 0)
+        // Tiny residual lift so blacks are not crushed to zero — but denser than Polaroid fog.
         XCTAssertGreaterThan(out.r, 0)
-        XCTAssertGreaterThan(out.g, 0)
-        XCTAssertGreaterThan(out.b, 0)
-        XCTAssertGreaterThanOrEqual(out.b, out.r - 10)
+        XCTAssertLessThan(out.r, 28)
+        XCTAssertLessThan(out.g, 28)
+        XCTAssertLessThan(out.b, 28)
     }
 
     func testCreamsPureWhite() {
@@ -24,9 +25,10 @@ final class GradeTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(out.g, out.b)
     }
 
-    func testWarmsMidGray() {
+    func testWarmsMidGrayWithForwardRed() {
         let out = Grade.gradeRgb255(r: 128, g: 128, b: 128)
         XCTAssertGreaterThan(out.r, out.b)
+        XCTAssertGreaterThan(out.r - out.b, 8)
     }
 
     func testMidGrayBrightens() {
@@ -35,7 +37,14 @@ final class GradeTests: XCTestCase {
     }
 
     func testExposureEVIsSunny() {
-        XCTAssertGreaterThan(Grade.exposureEV(), 0.25)
+        XCTAssertGreaterThan(Grade.exposureEV(), 0.20)
+        XCTAssertLessThan(Grade.exposureEV(), 0.40)
+    }
+
+    func testHouseMatrixForwardRedRestrainedBlue() {
+        let m = Grade.colorMatrix()
+        XCTAssertGreaterThan(m.r.0, m.b.2)
+        XCTAssertGreaterThan(m.bias.0, m.bias.2)
     }
 
     func testChannelsStayInRange() {

@@ -134,6 +134,8 @@ final class CaptionTests: XCTestCase {
         XCTAssertEqual(CaptionFont.script.label, "script")
         XCTAssertEqual(CaptionFont.typewriter.label, "typewriter")
         XCTAssertEqual(CaptionFont.allCases.count, 4)
+        XCTAssertEqual(CaptionFont.pickerCases, [.serif, .script, .typewriter])
+        XCTAssertFalse(CaptionFont.pickerCases.contains(.modern))
     }
 
     func testCaptionFontsResolveUIFont() {

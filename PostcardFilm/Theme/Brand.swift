@@ -10,6 +10,8 @@ enum Brand {
     static let gallerySubtext = "prints you've kept."
     static let settingsSubtext = "your defaults for new prints."
     static let processHint = "tap the strip. write something."
+    /// Shown above the print when the front has a back note (flip chip is highlighted separately).
+    static let noteBehindHint = "there's a note behind."
     static let backHint = "write on the back."
     static let developing = "developing…"
     static let galleryChip = "gallery"

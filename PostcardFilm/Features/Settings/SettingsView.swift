@@ -106,6 +106,15 @@ struct SettingsView: View {
         .background(AppTheme.surface.ignoresSafeArea())
         .navigationTitle("settings")
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            // Hidden from pickers — migrate stale defaults so Settings isn't stuck on modern.
+            if settingsStore.settings.captionFont == .modern {
+                settingsStore.update { $0.captionFont = .serif }
+            }
+            if settingsStore.settings.backFont == .modern {
+                settingsStore.update { $0.backFont = .serif }
+            }
+        }
         .onDisappear { creditTapResetTask?.cancel() }
         .sheet(isPresented: $showCustomPrompt) {
             CustomCaptionPrompt(

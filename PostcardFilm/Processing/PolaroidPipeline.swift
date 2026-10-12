@@ -227,8 +227,17 @@ enum PolaroidPipeline {
         serendipitySeed: String = ""
     ) throws -> UIImage {
         let scene = FilmScene.measure(square)
-        let base = filmStock.recipe(meanLuma: scene.meanLuma, centerBias: scene.centerBias)
-        let expressed = FilmExpression.apply(base, strength: filmStrength, stock: filmStock)
+        let base = filmStock.recipe(
+            meanLuma: scene.meanLuma,
+            centerBias: scene.centerBias,
+            meanChroma: scene.meanChroma
+        )
+        let expressed = FilmExpression.apply(
+            base,
+            strength: filmStrength,
+            stock: filmStock,
+            seed: serendipitySeed
+        )
         let recipe = FilmSerendipity.vary(
             expressed,
             seed: serendipitySeed,
@@ -425,15 +434,17 @@ enum PolaroidPipeline {
         mark.draw(at: markOrigin, withAttributes: markAttrs)
     }
 
+    /// Outer-rim falloff only — not a circular “lens” sitting on the photo.
     private static func makeVignette(in rect: CGRect, strength: CGFloat = 1) -> UIImage? {
-        let edgeAlpha = min(0.72, 0.38 * strength)
-        let softStart = max(0.28, 0.5 - 0.12 * (strength - 1))
+        let edgeAlpha = min(0.22, 0.16 * strength)
+        let softStart: CGFloat = 0.78
+        let endRadius = hypot(rect.width, rect.height) * 0.52
         let renderer = UIGraphicsImageRenderer(size: rect.size)
         return renderer.image { ctx in
             let cg = ctx.cgContext
             let colors = [
                 UIColor.clear.cgColor,
-                UIColor(red: 40 / 255, green: 30 / 255, blue: 20 / 255, alpha: edgeAlpha).cgColor,
+                UIColor(red: 28 / 255, green: 22 / 255, blue: 18 / 255, alpha: edgeAlpha).cgColor,
             ] as CFArray
             let locations: [CGFloat] = [softStart, 1]
             guard let gradient = CGGradient(
@@ -447,7 +458,7 @@ enum PolaroidPipeline {
                 startCenter: center,
                 startRadius: 0,
                 endCenter: center,
-                endRadius: max(rect.width, rect.height) * 0.72,
+                endRadius: endRadius,
                 options: [.drawsAfterEndLocation]
             )
         }

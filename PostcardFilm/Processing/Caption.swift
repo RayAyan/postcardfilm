@@ -52,11 +52,15 @@ enum DateCaseStyle: String, Codable, CaseIterable, Identifiable {
 
 enum CaptionFont: String, Codable, CaseIterable, Identifiable {
     case serif
+    /// Kept for decode/render of older prints; hidden from pickers.
     case modern
     case script
     case typewriter
 
     var id: String { rawValue }
+
+    /// Fonts offered in Settings + Process editors (modern stays decodable only).
+    static let pickerCases: [CaptionFont] = [.serif, .script, .typewriter]
 
     var label: String {
         switch self {

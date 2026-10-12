@@ -11,7 +11,8 @@ final class PipelineSmokeTests: XCTestCase {
             dateFormat: .long,
             customText: "",
             date: Date(timeIntervalSince1970: 1_700_000_000),
-            filmStock: .onestep
+            filmStock: .onestep,
+            filmStrength: 1.0
         )
         XCTAssertFalse(result.originalJPEG.isEmpty)
         XCTAssertFalse(result.polaroidPNG.isEmpty)

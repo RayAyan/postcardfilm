@@ -75,6 +75,17 @@ final class GalleryPersistenceTests: XCTestCase {
         XCTAssertEqual(merged.map(\.id), ["seed-01"])
     }
 
+    func testAppBundleIdentifierStaysPostcardFilm() throws {
+        let projectYML = try String(
+            contentsOf: sourcesRoot.appendingPathComponent("project.yml"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(
+            projectYML.contains("PRODUCT_BUNDLE_IDENTIFIER: com.postcardfilm.app"),
+            "Bundle id must stay com.postcardfilm.app so Documents survive iOS / app upgrades"
+        )
+    }
+
     private var harnessSourceURL: URL {
         sourcesRoot.appendingPathComponent("PostcardFilm/App/ScreenshotHarness.swift")
     }

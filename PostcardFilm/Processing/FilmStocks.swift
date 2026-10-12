@@ -2,27 +2,27 @@ import CoreGraphics
 import Foundation
 import UIKit
 
-/// One of five emulsions in the pack. Drawn at shutter; the user never picks or sees the name.
+/// One of five emulsions in the Kodachrome-family pack. Drawn at shutter; user never picks.
 enum FilmStock: String, Codable, CaseIterable, Equatable {
-    /// Original — exact 1.0.0 house Polaroid look. Frozen.
+    /// House Kodachrome 64 daylight.
     case onestep
-    /// Polaroid Sun 660 — soft flash fill, darker edges.
+    /// Dusk / harder light — same reds, deeper edges, soft fill when dark.
     case sun660
-    /// Instax Mini — soft cool Instant.
+    /// Cooler K25-ish — deeper sky blues, reds still forward.
     case mini9
-    /// Fujifilm Natura 1600 — mild milky Fuji.
+    /// Summer-greens cousin — luminous greens without Fuji fog.
     case natura
-    /// Leica M6 — soft dense rangefinder.
+    /// Densest Dmax — slightly darker EV.
     case m6
 
     /// Docs / DEBUG only — never shown in product UI.
     var cameraName: String {
         switch self {
-        case .onestep: return "Original"
-        case .sun660: return "Polaroid Sun 660"
-        case .mini9: return "Instax Mini 9"
-        case .natura: return "Fujifilm Natura 1600"
-        case .m6: return "Leica M6"
+        case .onestep: return "Matisse"
+        case .sun660: return "Van Gogh"
+        case .mini9: return "Picasso"
+        case .natura: return "Monet"
+        case .m6: return "Rembrandt"
         }
     }
 
@@ -38,25 +38,27 @@ enum FilmStock: String, Codable, CaseIterable, Equatable {
     }
 
     /// Scene-aware recipe from the ungraded square crop.
-    func recipe(meanLuma: Double, centerBias: Double) -> FilmRecipe {
+    func recipe(meanLuma: Double, centerBias: Double, meanChroma: Double = 0.2) -> FilmRecipe {
         let night = FilmScene.nightAmount(meanLuma: meanLuma)
         let alreadyFlashed = centerBias > 0.12
+        var recipe: FilmRecipe
         switch self {
         case .onestep:
-            return .onestep
+            recipe = .onestep
         case .sun660:
-            return .sun660(night: night, alreadyFlashed: alreadyFlashed)
+            recipe = .sun660(night: night, alreadyFlashed: alreadyFlashed)
         case .mini9:
-            return .mini9(night: night)
+            recipe = .mini9(night: night)
         case .natura:
-            return .natura(night: night)
+            recipe = .natura(night: night)
         case .m6:
-            return .m6(night: night)
+            recipe = .m6(night: night)
         }
+        return FilmScene.applyChromaSaturation(recipe, meanChroma: meanChroma)
     }
 }
 
-/// How dark the frame is (0 = bright day, 1 = night).
+/// How dark / colourful the frame is.
 enum FilmScene {
     static func nightAmount(meanLuma: Double) -> Double {
         // Bright day ~0.45+, deep night ~0.12-. Soft ramp in between.
@@ -64,14 +66,14 @@ enum FilmScene {
         return min(1, max(0, t))
     }
 
-    /// Whole-frame mean luma + (center − edge) bias on the ungraded square.
-    static func measure(_ image: UIImage) -> (meanLuma: Double, centerBias: Double) {
+    /// Whole-frame mean luma, (center − edge) bias, and mean chroma on the ungraded square.
+    static func measure(_ image: UIImage) -> (meanLuma: Double, centerBias: Double, meanChroma: Double) {
         let sampleSide = 64
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: sampleSide, height: sampleSide))
         let small = renderer.image { _ in
             image.draw(in: CGRect(x: 0, y: 0, width: sampleSide, height: sampleSide))
         }
-        guard let cg = small.cgImage else { return (0.5, 0) }
+        guard let cg = small.cgImage else { return (0.5, 0, 0.2) }
 
         let width = cg.width
         let height = cg.height
@@ -87,11 +89,12 @@ enum FilmScene {
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else {
-            return (0.5, 0)
+            return (0.5, 0, 0.2)
         }
         context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
 
         var total = 0.0
+        var chromaTotal = 0.0
         var centerTotal = 0.0
         var edgeTotal = 0.0
         var centerCount = 0
@@ -109,6 +112,7 @@ enum FilmScene {
                 let b = Double(data[i + 2]) / 255
                 let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
                 total += luma
+                chromaTotal += max(r, g, b) - min(r, g, b)
                 let dx = Double(x) - cx
                 let dy = Double(y) - cy
                 let dist = sqrt(dx * dx + dy * dy)
@@ -124,9 +128,20 @@ enum FilmScene {
 
         let pixelCount = Double(width * height)
         let mean = total / pixelCount
+        let chroma = chromaTotal / pixelCount
         let centerMean = centerCount > 0 ? centerTotal / Double(centerCount) : mean
         let edgeMean = edgeCount > 0 ? edgeTotal / Double(edgeCount) : mean
-        return (mean, centerMean - edgeMean)
+        return (mean, centerMean - edgeMean, chroma)
+    }
+
+    /// Low-chroma (dull gray/green) frames get a modest sat bump; colourful scenes stay put.
+    static func applyChromaSaturation(_ recipe: FilmRecipe, meanChroma: Double) -> FilmRecipe {
+        var next = recipe
+        guard meanChroma < 0.12 else { return next }
+        let t = (0.12 - meanChroma) / 0.12
+        let bump = 0.04 + 0.04 * min(1, max(0, t))
+        next.saturation = min(1.18, next.saturation + bump)
+        return next
     }
 }
 
@@ -151,19 +166,19 @@ struct FilmRecipe: Equatable {
     /// CIHighlightShadowAdjust shadowAmount (negative crushes, positive lifts).
     var shadowAmount: Double
     var blurRadius: Double
-    /// Multiply vignette drawn alpha scale (1 = house default strength).
+    /// Multiply vignette drawn alpha scale (rim-only overlay).
     var vignetteStrength: CGFloat
-    /// Screen light-leak alpha (0 = off).
+    /// Screen light-leak alpha (0 = off). Retired for Kodachrome pack.
     var leakAlpha: CGFloat
-    /// Screen highlight-bloom alpha (0 = off).
+    /// Screen highlight-bloom alpha (0 = off). Retired for Kodachrome pack.
     var bloomAlpha: CGFloat
     /// Soft radial flash fill screen alpha (sun660). 0 = off.
     var flashAlpha: CGFloat
     /// Extra center exposure for sun660 flash fill.
     var flashCenterLift: Double
-    /// Soft film grain overlay alpha (0 = none). Original always 0.
+    /// Soft film grain overlay alpha (always 0 — upsampled noise looked pixelated).
     var grainAmount: CGFloat
-    /// Soft edge burn strength (0 = none). Original always 0.
+    /// Soft edge burn strength (0 = none).
     var edgeBurnAmount: CGFloat
 
     static func == (lhs: FilmRecipe, rhs: FilmRecipe) -> Bool {
@@ -190,19 +205,43 @@ struct FilmRecipe: Equatable {
 }
 
 extension FilmRecipe {
-    /// Exact 1.0.0 Original look — frozen. Neutral tone knobs so CI path matches v1.
+    /// House Kodachrome 64 daylight — denser darks, forward reds, no leak/bloom.
     static let onestep = FilmRecipe(
         exposureEV: Grade.exposureEV(),
         colorMatrix: Grade.colorMatrix(),
         shadowSaturation: Grade.shadowSaturation(),
+        contrast: 1.04,
+        saturation: 1.08,
+        highlightAmount: 0.96,
+        shadowAmount: -0.04,
+        blurRadius: 0.42,
+        vignetteStrength: 0.65,
+        leakAlpha: 0,
+        bloomAlpha: 0,
+        flashAlpha: 0,
+        flashCenterLift: 0,
+        grainAmount: 0,
+        edgeBurnAmount: 0
+    )
+
+    /// Quiet Matisse expression floor — bold strength lerps fully back to `onestep`.
+    static let matisseSoft = FilmRecipe(
+        exposureEV: Grade.exposureEV() * 0.92,
+        colorMatrix: (
+            r: (0.98, 0.05, 0.02, 0),
+            g: (0.03, 0.96, 0.03, 0),
+            b: (0.02, 0.04, 0.94, 0),
+            bias: (0.03, 0.025, 0.02)
+        ),
+        shadowSaturation: (amount: 1.08, maskGamma: 1.45),
         contrast: 1.0,
-        saturation: 1.0,
-        highlightAmount: 1.0,
+        saturation: 1.02,
+        highlightAmount: 0.98,
         shadowAmount: 0,
-        blurRadius: 0.55,
-        vignetteStrength: 1,
-        leakAlpha: 0.55,
-        bloomAlpha: 0.7,
+        blurRadius: 0.40,
+        vignetteStrength: 0.50,
+        leakAlpha: 0,
+        bloomAlpha: 0,
         flashAlpha: 0,
         flashCenterLift: 0,
         grainAmount: 0,
@@ -210,147 +249,147 @@ extension FilmRecipe {
     )
 
     static func sun660(night: Double, alreadyFlashed: Bool) -> FilmRecipe {
-        // Flash cousin nearer Original: hint of fill and edges, not a stamp.
+        // Dusk / harder light — same red pop, deeper edges, soft fill when dark.
         let dayMatrix: FilmColorMatrix = (
-            r: (0.90, 0.06, 0.03, 0),
-            g: (0.03, 0.92, 0.045, 0),
-            b: (0.015, 0.08, 0.94, 0),
-            bias: (0.055, 0.055, 0.06)
+            r: (0.96, 0.08, 0.02, 0),
+            g: (0.035, 0.90, 0.04, 0),
+            b: (0.01, 0.06, 0.93, 0),
+            bias: (0.04, 0.035, 0.04)
         )
         let nightMatrix: FilmColorMatrix = (
-            r: (0.88, 0.055, 0.035, 0),
-            g: (0.03, 0.915, 0.05, 0),
-            b: (0.015, 0.085, 0.95, 0),
-            bias: (0.05, 0.05, 0.065)
+            r: (0.94, 0.075, 0.025, 0),
+            g: (0.035, 0.895, 0.045, 0),
+            b: (0.01, 0.065, 0.94, 0),
+            bias: (0.035, 0.032, 0.042)
         )
         let matrix = lerpMatrix(dayMatrix, nightMatrix, t: night)
 
-        let dayEV = 0.40
-        let nightEV = alreadyFlashed ? 0.28 : 0.48
+        let dayEV = 0.42
+        let nightEV = alreadyFlashed ? 0.28 : 0.50
         let ev = lerp(dayEV, nightEV, t: night)
 
-        let dayFlash: CGFloat = 0.12
-        let nightFlash: CGFloat = alreadyFlashed ? 0.06 : 0.20
+        let dayFlash: CGFloat = 0.10
+        let nightFlash: CGFloat = alreadyFlashed ? 0.05 : 0.18
         let flash = CGFloat(lerp(Double(dayFlash), Double(nightFlash), t: night))
 
-        let dayLift = alreadyFlashed ? 0.0 : 0.05
-        let nightLift = alreadyFlashed ? 0.0 : 0.12
+        let dayLift = alreadyFlashed ? 0.0 : 0.04
+        let nightLift = alreadyFlashed ? 0.0 : 0.10
         let lift = lerp(dayLift, nightLift, t: night)
 
         return FilmRecipe(
             exposureEV: ev,
             colorMatrix: matrix,
-            shadowSaturation: (amount: lerp(1.14, 1.12, t: night), maskGamma: 1.48),
-            contrast: lerp(1.02, 1.04, t: night),
-            saturation: lerp(1.01, 1.00, t: night),
-            highlightAmount: lerp(0.96, 0.94, t: night),
-            shadowAmount: lerp(-0.02, -0.04, t: night),
-            blurRadius: 0.55,
-            vignetteStrength: CGFloat(lerp(1.18, 1.28, t: night)),
+            shadowSaturation: (amount: lerp(1.20, 1.18, t: night), maskGamma: 1.58),
+            contrast: lerp(1.06, 1.08, t: night),
+            saturation: lerp(1.05, 1.04, t: night),
+            highlightAmount: lerp(0.94, 0.92, t: night),
+            shadowAmount: lerp(-0.06, -0.08, t: night),
+            blurRadius: 0.42,
+            vignetteStrength: CGFloat(lerp(0.80, 0.90, t: night)),
             leakAlpha: 0,
-            bloomAlpha: CGFloat(lerp(0.40, 0.32, t: night)),
+            bloomAlpha: 0,
             flashAlpha: flash,
             flashCenterLift: lift,
-            grainAmount: 0.015,
-            edgeBurnAmount: 0.08
+            grainAmount: 0,
+            edgeBurnAmount: 0.07
         )
     }
 
     static func mini9(night: Double) -> FilmRecipe {
-        // Cool Instant cousin — slight punch, close to house contrast.
+        // Cooler K25-ish — deeper sky blues, reds still forward, darks closed.
         let dayMatrix: FilmColorMatrix = (
-            r: (0.90, 0.055, 0.02, 0),
-            g: (0.03, 0.90, 0.055, 0),
-            b: (0.02, 0.075, 0.96, 0),
-            bias: (0.05, 0.05, 0.052)
+            r: (1.00, 0.06, 0.01, 0),
+            g: (0.025, 0.93, 0.04, 0),
+            b: (0.01, 0.055, 0.94, 0),
+            bias: (0.045, 0.04, 0.038)
         )
         let nightMatrix: FilmColorMatrix = (
-            r: (0.88, 0.05, 0.02, 0),
-            g: (0.03, 0.89, 0.06, 0),
-            b: (0.02, 0.08, 0.97, 0),
-            bias: (0.045, 0.045, 0.055)
+            r: (0.98, 0.055, 0.01, 0),
+            g: (0.025, 0.92, 0.045, 0),
+            b: (0.01, 0.06, 0.95, 0),
+            bias: (0.04, 0.038, 0.042)
         )
         return FilmRecipe(
-            exposureEV: lerp(0.22, 0.18, t: night),
+            exposureEV: lerp(0.24, 0.20, t: night),
             colorMatrix: lerpMatrix(dayMatrix, nightMatrix, t: night),
-            shadowSaturation: (amount: lerp(1.20, 1.22, t: night), maskGamma: lerp(1.55, 1.62, t: night)),
+            shadowSaturation: (amount: lerp(1.24, 1.26, t: night), maskGamma: lerp(1.60, 1.66, t: night)),
             contrast: lerp(1.06, 1.08, t: night),
-            saturation: lerp(1.03, 1.04, t: night),
-            highlightAmount: lerp(0.96, 0.94, t: night),
+            saturation: lerp(1.08, 1.09, t: night),
+            highlightAmount: lerp(0.95, 0.93, t: night),
             shadowAmount: lerp(-0.06, -0.08, t: night),
-            blurRadius: 0.50,
-            vignetteStrength: CGFloat(lerp(1.05, 1.12, t: night)),
+            blurRadius: 0.40,
+            vignetteStrength: CGFloat(lerp(0.65, 0.72, t: night)),
             leakAlpha: 0,
-            bloomAlpha: 0.35,
+            bloomAlpha: 0,
             flashAlpha: 0,
             flashCenterLift: 0,
-            grainAmount: 0.025,
+            grainAmount: 0,
             edgeBurnAmount: 0.04
         )
     }
 
     static func natura(night: Double) -> FilmRecipe {
-        // Milder milky Fuji: slight lift and green, not a fog wash.
+        // Monet — Polaroid olive foliage (cooler green, denser darks; not yellow lawn).
         let dayMatrix: FilmColorMatrix = (
-            r: (0.96, 0.11, 0.01, 0),
-            g: (0.06, 1.00, 0.06, 0),
-            b: (0.005, 0.05, 0.80, 0),
-            bias: (0.09, 0.095, 0.045)
+            r: (0.98, 0.07, 0.01, 0),
+            g: (0.04, 1.02, 0.07, 0),
+            b: (0.01, 0.07, 0.86, 0),
+            bias: (0.05, 0.042, 0.032)
         )
         let nightMatrix: FilmColorMatrix = (
-            r: (0.95, 0.12, 0.01, 0),
-            g: (0.065, 1.02, 0.065, 0),
-            b: (0.005, 0.055, 0.78, 0),
-            bias: (0.085, 0.10, 0.04)
+            r: (0.97, 0.075, 0.01, 0),
+            g: (0.042, 1.022, 0.075, 0),
+            b: (0.01, 0.075, 0.85, 0),
+            bias: (0.045, 0.045, 0.034)
         )
         return FilmRecipe(
-            exposureEV: lerp(0.40, 0.48, t: night),
+            exposureEV: lerp(0.30, 0.34, t: night),
             colorMatrix: lerpMatrix(dayMatrix, nightMatrix, t: night),
-            shadowSaturation: (amount: lerp(1.15, 1.18, t: night), maskGamma: 1.45),
-            contrast: lerp(0.88, 0.86, t: night),
-            saturation: lerp(0.98, 0.99, t: night),
+            shadowSaturation: (amount: lerp(1.18, 1.20, t: night), maskGamma: 1.55),
+            contrast: lerp(1.04, 1.06, t: night),
+            saturation: lerp(1.05, 1.06, t: night),
             highlightAmount: lerp(0.94, 0.92, t: night),
-            shadowAmount: lerp(0.10, 0.14, t: night),
-            blurRadius: 0.53,
-            vignetteStrength: 0.85,
-            leakAlpha: 0.28,
-            bloomAlpha: 0.48,
+            shadowAmount: lerp(-0.05, -0.06, t: night),
+            blurRadius: 0.42,
+            vignetteStrength: 0.62,
+            leakAlpha: 0,
+            bloomAlpha: 0,
             flashAlpha: 0,
             flashCenterLift: 0,
-            grainAmount: 0.02,
-            edgeBurnAmount: 0.03
+            grainAmount: 0,
+            edgeBurnAmount: 0.05
         )
     }
 
     static func m6(night: Double) -> FilmRecipe {
-        // Dense cousin nearer Original: a little darker and less sat, not razor contrast.
+        // Densest Dmax — reds still pop, sat restored, slightly lower EV.
         let dayMatrix: FilmColorMatrix = (
-            r: (0.97, 0.06, 0.00, 0),
-            g: (0.03, 0.94, 0.025, 0),
-            b: (0.00, 0.055, 0.92, 0),
-            bias: (0.05, 0.045, 0.04)
+            r: (1.01, 0.06, 0.00, 0),
+            g: (0.025, 0.93, 0.025, 0),
+            b: (0.00, 0.04, 0.87, 0),
+            bias: (0.048, 0.038, 0.022)
         )
         let nightMatrix: FilmColorMatrix = (
-            r: (0.96, 0.055, 0.00, 0),
-            g: (0.03, 0.935, 0.03, 0),
-            b: (0.00, 0.06, 0.93, 0),
-            bias: (0.045, 0.04, 0.042)
+            r: (1.00, 0.055, 0.00, 0),
+            g: (0.025, 0.925, 0.03, 0),
+            b: (0.00, 0.045, 0.88, 0),
+            bias: (0.042, 0.035, 0.024)
         )
         return FilmRecipe(
             exposureEV: lerp(0.18, 0.14, t: night),
             colorMatrix: lerpMatrix(dayMatrix, nightMatrix, t: night),
-            shadowSaturation: (amount: lerp(1.08, 1.05, t: night), maskGamma: 1.40),
-            contrast: lerp(1.06, 1.08, t: night),
-            saturation: lerp(0.95, 0.93, t: night),
-            highlightAmount: lerp(0.96, 0.94, t: night),
-            shadowAmount: lerp(-0.04, -0.06, t: night),
-            blurRadius: 0.48,
-            vignetteStrength: 1.0,
+            shadowSaturation: (amount: lerp(1.16, 1.14, t: night), maskGamma: 1.50),
+            contrast: lerp(1.07, 1.09, t: night),
+            saturation: lerp(1.04, 1.03, t: night),
+            highlightAmount: lerp(0.94, 0.92, t: night),
+            shadowAmount: lerp(-0.07, -0.09, t: night),
+            blurRadius: 0.38,
+            vignetteStrength: 0.78,
             leakAlpha: 0,
-            bloomAlpha: 0.35,
+            bloomAlpha: 0,
             flashAlpha: 0,
             flashCenterLift: 0,
-            grainAmount: 0.03,
+            grainAmount: 0,
             edgeBurnAmount: 0.07
         )
     }
@@ -386,10 +425,20 @@ enum FilmExpression {
     static let legacyDefault: Double = 1.0
     static let minimumStrength: Double = 0.42
     static let maximumStrength: Double = 1.0
+    /// Chance a print gets a tiny depth kiss after expression (~18%).
+    static let depthKissChance: Double = 0.18
+    /// Contrast bump when the depth kiss fires.
+    static let depthKissContrastMin: Double = 0.02
+    static let depthKissContrastMax: Double = 0.04
+    /// Extra shadow crush (more negative) when the depth kiss fires.
+    static let depthKissShadowMin: Double = 0.02
+    static let depthKissShadowMax: Double = 0.04
+    /// Optional rim vignette nudge when the depth kiss fires.
+    static let depthKissVignetteMin: Double = 0.02
+    static let depthKissVignetteMax: Double = 0.04
 
-    /// Weighted draw: ~65% gentle, ~25% medium, ~10% bold. Original always 1.0.
+    /// Weighted draw: ~65% gentle, ~25% medium, ~10% bold (all five stocks, including Matisse).
     static func resolve(seed: String, stock: FilmStock) -> Double {
-        guard stock != .onestep else { return maximumStrength }
         var rng = SeededRNG(seed: seedHash(seed, stock: stock, tag: "expr"))
         let roll = rng.nextUnit()
         let strength: Double
@@ -405,34 +454,88 @@ enum FilmExpression {
 
     /// Softens harsh knobs toward safe anchors while keeping stock color identity.
     /// Applied after scene-aware recipe, before serendipity.
-    static func apply(_ recipe: FilmRecipe, strength: Double, stock: FilmStock) -> FilmRecipe {
-        guard stock != .onestep else { return recipe }
+    /// - Parameter seed: print id — drives the occasional depth kiss (reburn-stable).
+    static func apply(
+        _ recipe: FilmRecipe,
+        strength: Double,
+        stock: FilmStock,
+        seed: String = ""
+    ) -> FilmRecipe {
         let t = clamp(strength, minimumStrength, maximumStrength)
         // Color / tone identity stays mostly stock even when gentle.
         let idMix = 0.58 + 0.42 * t
-        // Contrast, flash, grain, edge burn attenuate more at low strength.
+        // Contrast, flash, edge burn attenuate more at low strength.
         let harshMix = 0.30 + 0.70 * t
 
-        let house = FilmRecipe.onestep
-        var next = recipe
-        next.exposureEV = lerp(house.exposureEV, recipe.exposureEV, t: idMix)
-        next.colorMatrix = lerpMatrix(house.colorMatrix, recipe.colorMatrix, t: idMix)
+        let expressed: FilmRecipe
+        if stock == .onestep {
+            // Matisse: quiet soft anchor → full house. Bold (1.0) == today's house look.
+            expressed = mix(from: .matisseSoft, toward: FilmRecipe.onestep, idMix: idMix, harshMix: harshMix)
+        } else {
+            expressed = mix(from: .onestep, toward: recipe, idMix: idMix, harshMix: harshMix)
+        }
+        return applyDepthKiss(expressed, seed: seed, stock: stock)
+    }
+
+    /// Whether this seed/stock pair receives the depth kiss (for tests).
+    static func depthKissApplies(seed: String, stock: FilmStock) -> Bool {
+        var rng = SeededRNG(seed: seedHash(seed, stock: stock, tag: "depthkiss"))
+        return rng.nextUnit() < depthKissChance
+    }
+
+    /// Soft Matisse anchor — quieter contrast/sat/vignette; bold lerps to full house.
+    fileprivate static func mix(
+        from anchor: FilmRecipe,
+        toward target: FilmRecipe,
+        idMix: Double,
+        harshMix: Double
+    ) -> FilmRecipe {
+        var next = target
+        next.exposureEV = lerp(anchor.exposureEV, target.exposureEV, t: idMix)
+        next.colorMatrix = lerpMatrix(anchor.colorMatrix, target.colorMatrix, t: idMix)
         next.shadowSaturation = (
-            amount: lerp(house.shadowSaturation.amount, recipe.shadowSaturation.amount, t: idMix),
-            maskGamma: lerp(house.shadowSaturation.maskGamma, recipe.shadowSaturation.maskGamma, t: idMix)
+            amount: lerp(anchor.shadowSaturation.amount, target.shadowSaturation.amount, t: idMix),
+            maskGamma: lerp(anchor.shadowSaturation.maskGamma, target.shadowSaturation.maskGamma, t: idMix)
         )
-        next.saturation = lerp(1.0, recipe.saturation, t: idMix)
-        next.contrast = lerp(1.0, recipe.contrast, t: harshMix)
-        next.highlightAmount = lerp(1.0, recipe.highlightAmount, t: harshMix)
-        next.shadowAmount = lerp(0, recipe.shadowAmount, t: harshMix)
-        next.blurRadius = lerp(0.50, recipe.blurRadius, t: idMix)
-        next.vignetteStrength = CGFloat(lerp(1.0, Double(recipe.vignetteStrength), t: harshMix))
-        next.leakAlpha = CGFloat(lerp(0, Double(recipe.leakAlpha), t: idMix))
-        next.bloomAlpha = CGFloat(lerp(0.20, Double(recipe.bloomAlpha), t: idMix))
-        next.flashAlpha = CGFloat(lerp(0, Double(recipe.flashAlpha), t: harshMix))
-        next.flashCenterLift = lerp(0, recipe.flashCenterLift, t: harshMix)
-        next.grainAmount = CGFloat(lerp(0, Double(recipe.grainAmount), t: harshMix))
-        next.edgeBurnAmount = CGFloat(lerp(0, Double(recipe.edgeBurnAmount), t: harshMix))
+        next.saturation = lerp(anchor.saturation, target.saturation, t: idMix)
+        next.contrast = lerp(anchor.contrast, target.contrast, t: harshMix)
+        next.highlightAmount = lerp(anchor.highlightAmount, target.highlightAmount, t: harshMix)
+        next.shadowAmount = lerp(anchor.shadowAmount, target.shadowAmount, t: harshMix)
+        next.blurRadius = lerp(anchor.blurRadius, target.blurRadius, t: idMix)
+        next.vignetteStrength = CGFloat(lerp(Double(anchor.vignetteStrength), Double(target.vignetteStrength), t: harshMix))
+        next.leakAlpha = 0
+        next.bloomAlpha = 0
+        next.flashAlpha = CGFloat(lerp(Double(anchor.flashAlpha), Double(target.flashAlpha), t: harshMix))
+        next.flashCenterLift = lerp(anchor.flashCenterLift, target.flashCenterLift, t: harshMix)
+        next.grainAmount = 0
+        next.edgeBurnAmount = CGFloat(lerp(Double(anchor.edgeBurnAmount), Double(target.edgeBurnAmount), t: harshMix))
+        return next
+    }
+
+    /// Occasional contrast + darker darks — no hue / green / yellow shift.
+    fileprivate static func applyDepthKiss(
+        _ recipe: FilmRecipe,
+        seed: String,
+        stock: FilmStock
+    ) -> FilmRecipe {
+        guard !seed.isEmpty else { return recipe }
+        var rng = SeededRNG(seed: seedHash(seed, stock: stock, tag: "depthkiss"))
+        let roll = rng.nextUnit()
+        guard roll < depthKissChance else { return recipe }
+        let contrastBump = depthKissContrastMin
+            + rng.nextUnit() * (depthKissContrastMax - depthKissContrastMin)
+        let shadowCrush = depthKissShadowMin
+            + rng.nextUnit() * (depthKissShadowMax - depthKissShadowMin)
+        let vignetteBump = depthKissVignetteMin
+            + rng.nextUnit() * (depthKissVignetteMax - depthKissVignetteMin)
+        var next = recipe
+        next.contrast = clamp(next.contrast + contrastBump, 0.90, 1.18)
+        next.shadowAmount = clamp(next.shadowAmount - shadowCrush, -0.14, 0.08)
+        next.vignetteStrength = CGFloat(clamp(
+            Double(next.vignetteStrength) + vignetteBump,
+            0.45,
+            1.15
+        ))
         return next
     }
 
@@ -472,8 +575,7 @@ enum FilmExpression {
     }
 }
 
-/// Light per-print jitter so two draws of the same stock still feel like Polaroid chance.
-/// Jitter amplitude and rare long-roll events scale with expression strength.
+/// Light per-print jitter — brightness, contrast, edges — never leak/bloom/grain.
 enum FilmSerendipity {
     static func vary(
         _ recipe: FilmRecipe,
@@ -481,68 +583,54 @@ enum FilmSerendipity {
         stock: FilmStock,
         strength: Double = FilmExpression.legacyDefault
     ) -> FilmRecipe {
-        guard stock != .onestep else { return recipe }
-
         let s = FilmExpression.clamp(strength, FilmExpression.minimumStrength, FilmExpression.maximumStrength)
-        // Keep legacy hash shape (`seed|stock`) so pre-expression prints reburn identically at strength 1.0.
+        // Keep legacy hash shape (`seed|stock`) so reburns stay pixel-stable.
         var rng = SeededRNG(seed: legacySeedHash(seed, stock: stock))
         var next = recipe
 
+        next.exposureEV = FilmExpression.clamp(
+            next.exposureEV + (rng.nextUnit() * 0.20 - 0.10) * s,
+            0.05,
+            0.55
+        )
         next.contrast = FilmExpression.clamp(
             next.contrast + (rng.nextUnit() * 0.04 - 0.02) * s,
-            0.68,
-            1.20
+            0.90,
+            1.18
         )
         next.vignetteStrength = CGFloat(FilmExpression.clamp(
-            Double(next.vignetteStrength) + (rng.nextUnit() * 0.12 - 0.06) * s,
-            0.55,
-            1.70
+            Double(next.vignetteStrength) + (rng.nextUnit() * 0.10 - 0.05) * s,
+            0.45,
+            1.15
         ))
-        next.bloomAlpha = CGFloat(FilmExpression.clamp(
-            Double(next.bloomAlpha) + (rng.nextUnit() * 0.08 - 0.03) * s,
-            0,
-            0.45
-        ))
-        next.leakAlpha = CGFloat(FilmExpression.clamp(
-            Double(next.leakAlpha) + (rng.nextUnit() * 0.06 - 0.02) * s,
-            0,
-            0.40
-        ))
-        next.grainAmount = CGFloat(FilmExpression.clamp(
-            Double(next.grainAmount) + (rng.nextUnit() * 0.03 - 0.01) * s,
-            0,
-            0.08
-        ))
+        // Consume former grain slot so EV / edge / flash streams stay seed-stable.
+        _ = rng.nextUnit()
+        next.grainAmount = 0
         next.edgeBurnAmount = CGFloat(FilmExpression.clamp(
-            Double(next.edgeBurnAmount) + (rng.nextUnit() * 0.08 - 0.03) * s,
+            Double(next.edgeBurnAmount) + (rng.nextUnit() * 0.06 - 0.02) * s,
             0,
-            0.25
+            0.18
         ))
         next.flashAlpha = CGFloat(FilmExpression.clamp(
             Double(next.flashAlpha) + (rng.nextUnit() * 0.04 - 0.02) * s,
             0,
-            0.34
+            0.28
         ))
 
-        // Occasional “long” soft effect: extra blur OR extra leak — never both maxed.
-        // Probabilities scale with strength so bold prints get rare drama more often.
+        // Occasional extra chemistry softness — never leak.
         let longRoll = rng.nextUnit()
-        let blurChance = 0.35 * s
-        let leakChance = blurChance + 0.20 * s
+        let blurChance = 0.30 * s
         if longRoll < blurChance {
             next.blurRadius = FilmExpression.clamp(
-                next.blurRadius + (0.08 + rng.nextUnit() * 0.06) * s,
+                next.blurRadius + (0.06 + rng.nextUnit() * 0.05) * s,
                 0.12,
-                0.70
+                0.62
             )
-        } else if longRoll < leakChance {
-            next.leakAlpha = CGFloat(FilmExpression.clamp(
-                Double(next.leakAlpha) + (0.06 + rng.nextUnit() * 0.05) * s,
-                0,
-                0.35
-            ))
         }
 
+        next.leakAlpha = 0
+        next.bloomAlpha = 0
+        next.grainAmount = 0
         return next
     }
 

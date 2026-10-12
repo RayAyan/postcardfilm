@@ -20,14 +20,14 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Take photos to turn them into prints.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save your prints to Photos.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Caveat-Regular.ttf</string>

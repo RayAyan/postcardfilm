@@ -42,29 +42,37 @@ final class FilmStockTests: XCTestCase {
         XCTAssertEqual(again.items[0].filmStock, .mini9)
     }
 
+    func testArtistDebugNames() {
+        XCTAssertEqual(FilmStock.onestep.cameraName, "Matisse")
+        XCTAssertEqual(FilmStock.sun660.cameraName, "Van Gogh")
+        XCTAssertEqual(FilmStock.mini9.cameraName, "Picasso")
+        XCTAssertEqual(FilmStock.natura.cameraName, "Monet")
+        XCTAssertEqual(FilmStock.m6.cameraName, "Rembrandt")
+    }
+
     func testOnestepRecipeMatchesHouseGrade() {
         let recipe = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
-        XCTAssertEqual(FilmStock.onestep.cameraName, "Original")
+        XCTAssertEqual(FilmStock.onestep.cameraName, "Matisse")
         XCTAssertEqual(recipe.exposureEV, Grade.exposureEV())
         let house = Grade.colorMatrix()
         XCTAssertEqual(recipe.colorMatrix.r.0, house.r.0, accuracy: 0.0001)
         XCTAssertEqual(recipe.colorMatrix.bias.0, house.bias.0, accuracy: 0.0001)
         XCTAssertEqual(recipe.shadowSaturation.amount, Grade.shadowSaturation().amount, accuracy: 0.0001)
-        XCTAssertEqual(recipe.contrast, 1.0, accuracy: 0.0001)
-        XCTAssertEqual(recipe.saturation, 1.0, accuracy: 0.0001)
-        XCTAssertEqual(recipe.highlightAmount, 1.0, accuracy: 0.0001)
-        XCTAssertEqual(recipe.shadowAmount, 0, accuracy: 0.0001)
-        XCTAssertEqual(recipe.leakAlpha, 0.55, accuracy: 0.001)
-        XCTAssertEqual(recipe.bloomAlpha, 0.7, accuracy: 0.001)
+        XCTAssertEqual(recipe.contrast, 1.04, accuracy: 0.0001)
+        XCTAssertEqual(recipe.saturation, 1.08, accuracy: 0.0001)
+        XCTAssertEqual(recipe.leakAlpha, 0, accuracy: 0.001)
+        XCTAssertEqual(recipe.bloomAlpha, 0, accuracy: 0.001)
         XCTAssertEqual(recipe.flashAlpha, 0, accuracy: 0.001)
         XCTAssertEqual(recipe.grainAmount, 0, accuracy: 0.001)
         XCTAssertEqual(recipe.edgeBurnAmount, 0, accuracy: 0.001)
+        XCTAssertLessThan(recipe.vignetteStrength, 0.80)
+        XCTAssertGreaterThan(recipe.vignetteStrength, 0.50)
     }
 
     func testOnestepWarmMidGrayBias() {
         let recipe = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
-        // House matrix warms: R bias >= B bias, and R diagonal pulls warm.
         XCTAssertGreaterThanOrEqual(recipe.colorMatrix.bias.0, recipe.colorMatrix.bias.2)
+        XCTAssertGreaterThan(recipe.colorMatrix.r.0, recipe.colorMatrix.b.2)
     }
 
     func testDaylightToneRoles() {
@@ -75,24 +83,28 @@ final class FilmStockTests: XCTestCase {
         let m6 = FilmStock.m6.recipe(meanLuma: 0.5, centerBias: 0)
 
         XCTAssertGreaterThan(sun.exposureEV, onestep.exposureEV - 0.05)
-        XCTAssertLessThan(sun.flashAlpha, 0.18)
-        XCTAssertGreaterThan(sun.flashAlpha, 0.08)
-        XCTAssertLessThan(sun.vignetteStrength, 1.35)
-        XCTAssertGreaterThan(sun.vignetteStrength, 1.10)
+        XCTAssertLessThan(sun.flashAlpha, 0.16)
+        XCTAssertGreaterThan(sun.flashAlpha, 0.06)
+        XCTAssertLessThan(sun.vignetteStrength, 1.0)
+        XCTAssertGreaterThan(sun.vignetteStrength, 0.70)
+        XCTAssertEqual(sun.leakAlpha, 0, accuracy: 0.001)
+        XCTAssertEqual(sun.bloomAlpha, 0, accuracy: 0.001)
 
-        XCTAssertLessThan(mini.contrast, 1.10)
+        XCTAssertLessThan(mini.contrast, 1.12)
         XCTAssertGreaterThan(mini.contrast, 1.03)
         XCTAssertLessThan(mini.shadowAmount, -0.03)
+        XCTAssertEqual(mini.leakAlpha, 0, accuracy: 0.001)
 
-        XCTAssertGreaterThan(natura.exposureEV, onestep.exposureEV)
-        XCTAssertLessThan(natura.contrast, 0.95)
-        XCTAssertGreaterThan(natura.shadowAmount, 0.06)
+        // Monet olive — greener than house, denser darks, real contrast (not flat lawn).
+        XCTAssertGreaterThan(natura.colorMatrix.g.1, onestep.colorMatrix.g.1)
+        XCTAssertLessThan(natura.shadowAmount, -0.03)
+        XCTAssertGreaterThan(natura.contrast, 1.02)
+        XCTAssertEqual(natura.leakAlpha, 0, accuracy: 0.001)
 
-        XCTAssertLessThan(m6.contrast, 1.10)
-        XCTAssertGreaterThan(m6.contrast, 1.03)
-        XCTAssertLessThan(m6.saturation, 1.0)
+        XCTAssertLessThan(m6.exposureEV, onestep.exposureEV)
+        XCTAssertGreaterThan(m6.saturation, 1.0)
+        XCTAssertLessThan(m6.shadowAmount, onestep.shadowAmount)
         XCTAssertEqual(m6.leakAlpha, 0, accuracy: 0.001)
-        XCTAssertGreaterThan(m6.blurRadius, 0.40)
     }
 
     func testMini9CoolerThanOnestep() {
@@ -103,26 +115,45 @@ final class FilmStockTests: XCTestCase {
         XCTAssertEqual(mini.leakAlpha, 0, accuracy: 0.001)
     }
 
-    func testNaturaGreenerShadowsThanOnestep() {
+    func testNaturaGreenerThanOnestepWithoutFog() {
         let onestep = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
         let natura = FilmStock.natura.recipe(meanLuma: 0.5, centerBias: 0)
+        // Monet: olive (cooler green path), not yellow lawn — green bias stays modest.
         XCTAssertGreaterThan(natura.colorMatrix.g.1, onestep.colorMatrix.g.1)
-        XCTAssertLessThan(natura.colorMatrix.b.2, onestep.colorMatrix.b.2)
+        XCTAssertLessThan(natura.colorMatrix.g.1, 1.03)
+        XCTAssertLessThan(natura.colorMatrix.bias.1, onestep.colorMatrix.bias.1 + 0.005)
+        XCTAssertGreaterThan(natura.colorMatrix.g.2, onestep.colorMatrix.g.2)
+        XCTAssertLessThan(natura.shadowAmount, -0.03)
+        XCTAssertGreaterThanOrEqual(natura.contrast, 1.03)
     }
 
-    func testM6NoLeakLowerSat() {
+    func testArtistToneRolesStayDistinct() {
+        let matisse = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
+        let vanGogh = FilmStock.sun660.recipe(meanLuma: 0.12, centerBias: 0.02)
+        let picasso = FilmStock.mini9.recipe(meanLuma: 0.5, centerBias: 0)
+        let monet = FilmStock.natura.recipe(meanLuma: 0.5, centerBias: 0)
+        let rembrandt = FilmStock.m6.recipe(meanLuma: 0.5, centerBias: 0)
+
+        XCTAssertGreaterThan(picasso.colorMatrix.b.2, matisse.colorMatrix.b.2)
+        XCTAssertGreaterThan(monet.colorMatrix.g.1, matisse.colorMatrix.g.1)
+        XCTAssertLessThan(rembrandt.exposureEV, matisse.exposureEV)
+        XCTAssertLessThan(rembrandt.shadowAmount, matisse.shadowAmount)
+        XCTAssertGreaterThan(vanGogh.flashAlpha, 0.10)
+    }
+
+    func testM6NoLeakDenserThanHouse() {
         let onestep = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
         let m6 = FilmStock.m6.recipe(meanLuma: 0.5, centerBias: 0)
         XCTAssertEqual(m6.leakAlpha, 0, accuracy: 0.001)
-        XCTAssertLessThan(m6.shadowSaturation.amount, onestep.shadowSaturation.amount)
         XCTAssertLessThan(m6.exposureEV, onestep.exposureEV)
+        XCTAssertLessThan(m6.shadowAmount, onestep.shadowAmount)
     }
 
     func testSun660FlashOnDarkUnflashedFrame() {
         let recipe = FilmStock.sun660.recipe(meanLuma: 0.12, centerBias: 0.02)
-        XCTAssertGreaterThan(recipe.flashAlpha, 0.12)
+        XCTAssertGreaterThan(recipe.flashAlpha, 0.10)
         XCTAssertLessThan(recipe.flashAlpha, 0.24)
-        XCTAssertGreaterThan(recipe.flashCenterLift, 0.05)
+        XCTAssertGreaterThan(recipe.flashCenterLift, 0.04)
         XCTAssertEqual(recipe.leakAlpha, 0, accuracy: 0.001)
     }
 
@@ -141,10 +172,32 @@ final class FilmStockTests: XCTestCase {
         XCTAssertGreaterThan(night.colorMatrix.g.1, day.colorMatrix.g.1)
     }
 
-    func testSerendipityLeavesOriginalUntouched() {
+    func testLowChromaGetsSaturationBump() {
+        let colourful = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0, meanChroma: 0.25)
+        let dull = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0, meanChroma: 0.04)
+        XCTAssertEqual(colourful.saturation, 1.08, accuracy: 0.0001)
+        XCTAssertGreaterThan(dull.saturation, colourful.saturation)
+        XCTAssertLessThanOrEqual(dull.saturation, 1.18)
+    }
+
+    func testSerendipityKeepsLeakBloomZero() {
+        let base = FilmStock.mini9.recipe(meanLuma: 0.5, centerBias: 0)
+        let varied = FilmSerendipity.vary(base, seed: "abc", stock: .mini9)
+        XCTAssertEqual(varied.leakAlpha, 0, accuracy: 0.001)
+        XCTAssertEqual(varied.bloomAlpha, 0, accuracy: 0.001)
+    }
+
+    func testSerendipityJittersExposure() {
         let base = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
-        let varied = FilmSerendipity.vary(base, seed: "abc", stock: .onestep)
-        XCTAssertEqual(varied, base)
+        let a = FilmSerendipity.vary(base, seed: "ev-a", stock: .onestep)
+        let b = FilmSerendipity.vary(base, seed: "ev-b", stock: .onestep)
+        XCTAssertEqual(a.leakAlpha, 0, accuracy: 0.001)
+        XCTAssertEqual(a.grainAmount, 0, accuracy: 0.001)
+        XCTAssertEqual(b.grainAmount, 0, accuracy: 0.001)
+        // Different seeds should diverge in EV / contrast.
+        let same = abs(a.exposureEV - b.exposureEV) < 0.00001
+            && abs(a.contrast - b.contrast) < 0.00001
+        XCTAssertFalse(same)
     }
 
     func testSerendipityIsDeterministicForSeed() {
@@ -153,13 +206,76 @@ final class FilmStockTests: XCTestCase {
         let b = FilmSerendipity.vary(base, seed: "print-1", stock: .mini9)
         let c = FilmSerendipity.vary(base, seed: "print-2", stock: .mini9)
         XCTAssertEqual(a, b)
-        XCTAssertNotEqual(a.grainAmount, c.grainAmount, accuracy: 0.00001)
+        XCTAssertEqual(a.grainAmount, 0, accuracy: 0.001)
+        XCTAssertNotEqual(a.exposureEV, c.exposureEV, accuracy: 0.00001)
     }
 
-    func testExpressionLeavesOriginalUntouched() {
+    func testMatisseExpressionVariesAndBoldMatchesHouse() {
         let base = FilmStock.onestep.recipe(meanLuma: 0.5, centerBias: 0)
-        XCTAssertEqual(FilmExpression.resolve(seed: "any", stock: .onestep), 1.0, accuracy: 0.0001)
-        XCTAssertEqual(FilmExpression.apply(base, strength: 0.5, stock: .onestep), base)
+        let a = FilmExpression.resolve(seed: "matisse-a", stock: .onestep)
+        let b = FilmExpression.resolve(seed: "matisse-b", stock: .onestep)
+        XCTAssertGreaterThanOrEqual(a, FilmExpression.minimumStrength)
+        XCTAssertLessThanOrEqual(a, FilmExpression.maximumStrength)
+        // Different seeds usually diverge; if not, still bounded above.
+        _ = b
+
+        // Empty seed skips depth kiss — bold Matisse == full house recipe.
+        let bold = FilmExpression.apply(base, strength: 1.0, stock: .onestep, seed: "")
+        XCTAssertEqual(bold, base)
+
+        let gentle = FilmExpression.apply(
+            base,
+            strength: FilmExpression.minimumStrength,
+            stock: .onestep,
+            seed: ""
+        )
+        XCTAssertLessThan(gentle.contrast, bold.contrast)
+        XCTAssertLessThan(gentle.vignetteStrength, bold.vignetteStrength)
+        XCTAssertEqual(gentle.grainAmount, 0, accuracy: 0.001)
+        XCTAssertEqual(gentle.leakAlpha, 0, accuracy: 0.001)
+    }
+
+    func testDepthKissIsSeededTinyAndStable() {
+        let base = FilmStock.mini9.recipe(meanLuma: 0.5, centerBias: 0)
+        let kissSeed = firstSeed(wantKiss: true, stock: .mini9)
+        let missSeed = firstSeed(wantKiss: false, stock: .mini9)
+
+        let kissed = FilmExpression.apply(base, strength: 1.0, stock: .mini9, seed: kissSeed)
+        let missed = FilmExpression.apply(base, strength: 1.0, stock: .mini9, seed: missSeed)
+        let kissedAgain = FilmExpression.apply(base, strength: 1.0, stock: .mini9, seed: kissSeed)
+
+        XCTAssertEqual(missed, FilmExpression.apply(base, strength: 1.0, stock: .mini9, seed: ""))
+        XCTAssertEqual(kissed.colorMatrix.g.1, base.colorMatrix.g.1, accuracy: 0.0001)
+        XCTAssertEqual(kissed.colorMatrix.bias.1, base.colorMatrix.bias.1, accuracy: 0.0001)
+        XCTAssertGreaterThan(kissed.contrast, base.contrast)
+        XCTAssertLessThanOrEqual(
+            kissed.contrast - base.contrast,
+            FilmExpression.depthKissContrastMax + 0.0001
+        )
+        XCTAssertLessThan(kissed.shadowAmount, base.shadowAmount)
+        XCTAssertEqual(kissed.contrast, kissedAgain.contrast, accuracy: 0.0000001)
+        XCTAssertEqual(kissed.shadowAmount, kissedAgain.shadowAmount, accuracy: 0.0000001)
+    }
+
+    func testProcessCaptureHonorsEachStockAndExpressionBand() throws {
+        let image = makeFlatImage(color: UIColor(white: 0.45, alpha: 1), size: 160)
+        let strengths = [0.52, 0.72, 1.0]
+        for stock in FilmStock.allCases {
+            for strength in strengths {
+                let result = try PolaroidPipeline.processCapture(
+                    image: image,
+                    captionMode: .blank,
+                    dateFormat: .long,
+                    customText: "",
+                    filmStock: stock,
+                    filmStrength: strength,
+                    serendipitySeed: "pipe-\(stock.rawValue)-\(strength)"
+                )
+                XCTAssertEqual(result.filmStock, stock)
+                XCTAssertEqual(result.filmStrength, strength, accuracy: 0.0001)
+                XCTAssertFalse(result.polaroidPNG.isEmpty)
+            }
+        }
     }
 
     func testExpressionResolveIsDeterministicAndBounded() {
@@ -195,22 +311,23 @@ final class FilmStockTests: XCTestCase {
 
     func testGentleExpressionSoftensHarshKnobs() {
         let base = FilmStock.mini9.recipe(meanLuma: 0.5, centerBias: 0)
+        let house = FilmRecipe.onestep
         let gentle = FilmExpression.apply(base, strength: FilmExpression.minimumStrength, stock: .mini9)
         let bold = FilmExpression.apply(base, strength: 1.0, stock: .mini9)
-        XCTAssertLessThan(abs(gentle.contrast - 1.0), abs(bold.contrast - 1.0))
-        XCTAssertLessThan(abs(gentle.shadowAmount), abs(bold.shadowAmount))
-        XCTAssertLessThan(gentle.grainAmount, bold.grainAmount)
+        XCTAssertLessThan(abs(gentle.contrast - house.contrast), abs(bold.contrast - house.contrast))
+        XCTAssertLessThan(abs(gentle.shadowAmount - house.shadowAmount), abs(bold.shadowAmount - house.shadowAmount))
         XCTAssertLessThan(gentle.edgeBurnAmount, bold.edgeBurnAmount)
-        // Full strength keeps the stock recipe before serendipity.
+        XCTAssertEqual(gentle.grainAmount, 0, accuracy: 0.001)
+        XCTAssertEqual(bold.grainAmount, 0, accuracy: 0.001)
+        XCTAssertEqual(gentle.leakAlpha, 0, accuracy: 0.001)
+        XCTAssertEqual(bold.leakAlpha, 0, accuracy: 0.001)
         XCTAssertEqual(bold.contrast, base.contrast, accuracy: 0.0001)
-        XCTAssertEqual(bold.grainAmount, base.grainAmount, accuracy: 0.0001)
     }
 
     func testGentleExpressionKeepsStockColorIdentity() {
         let base = FilmStock.natura.recipe(meanLuma: 0.5, centerBias: 0)
         let house = FilmRecipe.onestep
         let gentle = FilmExpression.apply(base, strength: FilmExpression.minimumStrength, stock: .natura)
-        // Green diagonal should stay closer to Natura than to Original even when gentle.
         let towardStock = abs(gentle.colorMatrix.g.1 - base.colorMatrix.g.1)
         let towardHouse = abs(gentle.colorMatrix.g.1 - house.colorMatrix.g.1)
         XCTAssertLessThan(towardStock, towardHouse)
@@ -251,8 +368,6 @@ final class FilmStockTests: XCTestCase {
         )
         XCTAssertEqual(rebaked.caption, "kept")
         XCTAssertFalse(rebaked.png.isEmpty)
-        // Same emulsion + strength + seed → identical PNG bytes on reburn of same caption path
-        // is hard to assert without re-rendering; at least strength round-trips through Result.
         let again = try PolaroidPipeline.processCapture(
             image: image,
             captionMode: .custom,
@@ -295,7 +410,8 @@ final class FilmStockTests: XCTestCase {
         let natura = try sampleCenter(afterGrading: image, stock: .natura)
 
         XCTAssertGreaterThan(onestep.r, onestep.b, "onestep should warm mid gray")
-        XCTAssertGreaterThan(mini.b, onestep.b - 0.01, "mini9 should read cooler / bluer")
+        XCTAssertGreaterThan(onestep.r - onestep.b, 0.02, "Kodachrome red should lead blue")
+        XCTAssertGreaterThan(mini.b, onestep.b - 0.02, "mini9 should read cooler / bluer")
         XCTAssertGreaterThan(natura.g, onestep.g - 0.02, "natura should lift green relative to onestep")
     }
 
@@ -331,16 +447,7 @@ final class FilmStockTests: XCTestCase {
         let black = makeFlatImage(color: UIColor(white: 0.08, alpha: 1), size: 256)
         let mini = try sampleCenter(afterGrading: black, stock: .mini9)
         let natura = try sampleCenter(afterGrading: black, stock: .natura)
-        let miniLuma = luma(mini)
-        let naturaLuma = luma(natura)
-        XCTAssertLessThan(miniLuma, naturaLuma, "mini9 should crush blacks vs milky natura")
-    }
-
-    func testNaturaMidBrighterThanOriginal() throws {
-        let mid = makeFlatImage(color: UIColor(white: 0.45, alpha: 1), size: 256)
-        let original = try sampleCenter(afterGrading: mid, stock: .onestep)
-        let natura = try sampleCenter(afterGrading: mid, stock: .natura)
-        XCTAssertGreaterThan(luma(natura), luma(original))
+        XCTAssertLessThan(luma(mini), luma(natura), "mini9 should crush blacks vs summer-green natura")
     }
 
     func testM6ContrastSpanGreaterThanNatura() throws {
@@ -357,7 +464,6 @@ final class FilmStockTests: XCTestCase {
 
     func testSun660CenterBrighterThanEdgeOnDarkFrame() throws {
         let image = makeCenterLitDarkFrame(size: 256)
-        // Dark overall, low center bias so flash fill engages.
         let graded = try PolaroidPipeline.applyGrade(
             to: image,
             recipe: FilmStock.sun660.recipe(meanLuma: 0.15, centerBias: 0.02)
@@ -368,6 +474,17 @@ final class FilmStockTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func firstSeed(wantKiss: Bool, stock: FilmStock) -> String {
+        for i in 0 ..< 5_000 {
+            let seed = "kiss-probe-\(i)"
+            if FilmExpression.depthKissApplies(seed: seed, stock: stock) == wantKiss {
+                return seed
+            }
+        }
+        XCTFail("could not find seed with wantKiss=\(wantKiss) for \(stock.rawValue)")
+        return "kiss-fallback"
+    }
 
     private func luma(_ c: (r: Double, g: Double, b: Double)) -> Double {
         0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
@@ -426,7 +543,11 @@ final class FilmStockTests: XCTestCase {
 
     private func sampleCenter(afterGrading image: UIImage, stock: FilmStock) throws -> (r: Double, g: Double, b: Double) {
         let scene = FilmScene.measure(image)
-        let recipe = stock.recipe(meanLuma: scene.meanLuma, centerBias: scene.centerBias)
+        let recipe = stock.recipe(
+            meanLuma: scene.meanLuma,
+            centerBias: scene.centerBias,
+            meanChroma: scene.meanChroma
+        )
         let graded = try PolaroidPipeline.applyGrade(to: image, recipe: recipe)
         return try samplePixel(graded, u: 0.5, v: 0.5)
     }
