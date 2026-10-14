@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct ProcessView: View {
-    let id: String
     let openedFromCapture: Bool
 
     @EnvironmentObject private var store: PolaroidStore
     @EnvironmentObject private var settingsStore: SettingsStore
     @Environment(\.dismiss) private var dismiss
 
+    @State private var currentID: String
     @State private var record: PolaroidRecord?
     @State private var missing = false
     @State private var saved = false
@@ -19,9 +19,13 @@ struct ProcessView: View {
     @State private var draftMode: CaptionMode = .date
     @State private var draftCustom = ""
     @State private var draftFont: CaptionFont = .serif
+    @State private var draftFontSize: CaptionFontSize = .medium
     @State private var draftCase: DateCaseStyle = .lowercase
+    @State private var draftHighlight = true
     @State private var draftBackNote = ""
     @State private var draftBackFont: CaptionFont = .script
+    @State private var draftBackFontSize: CaptionFontSize = .medium
+    @State private var draftBackCase: DateCaseStyle = .lowercase
     @State private var bust = 0
     @State private var backBust = 0
     @State private var alertMessage: String?
@@ -29,17 +33,84 @@ struct ProcessView: View {
     @State private var saveResetTask: Task<Void, Never>?
     @State private var isReburning = false
     @State private var isDeveloping: Bool
+    @State private var overlayElapsed = false
     @State private var isFlipped = false
     @State private var flipAngle: Double = 0
     @State private var isFlipping = false
+    @State private var hidePrintText = false
+    @State private var flipGeneration = 0
+    @State private var sharePayload: SharePayload?
+    @State private var applyTask: Task<Void, Never>?
+    @State private var lastApplyCompletedAt: Date?
+    @State private var draftDateFormat: DateFormatOption = .long
+    /// Which live editor last opened — used to flush the right drafts on dismiss.
+    @State private var activeEditor: LiveEditorKind = .none
+    /// Interactive swipe-down dismiss (gallery Process only).
+    @State private var dismissDrag: CGFloat = 0
+
+    private enum LiveEditorKind {
+        case none, front, back
+    }
 
     private var reduceMotion: Bool {
         UIAccessibility.isReduceMotionEnabled
     }
 
+    private var showingBackFace: Bool {
+        flipAngle >= 90
+    }
+
+    /// Call out flip when a note is waiting on the reverse.
+    private var emphasizeFlipForNote: Bool {
+        record?.hasBackNote == true && !showingBackFace && !isDeveloping && !missing
+    }
+
+    private var flipChipEmphasized: Bool {
+        isFlipped || emphasizeFlipForNote
+    }
+
+    private var galleryPagingEnabled: Bool {
+        !openedFromCapture
+            && !isDeveloping
+            && !isFlipping
+            && !showingBackFace
+            && !showCaptionSheet
+            && !showBackNoteSheet
+            && !showDeleteConfirm
+            && sharePayload == nil
+            && dismissDrag == 0
+    }
+
+    private var swipeDownDismissEnabled: Bool {
+        !openedFromCapture
+            && !missing
+            && !isDeveloping
+            && !isFlipping
+            && !showCaptionSheet
+            && !showBackNoteSheet
+            && !showDeleteConfirm
+            && sharePayload == nil
+    }
+
+    /// `scrollPosition` needs an optional id binding.
+    private var scrollPositionID: Binding<String?> {
+        Binding(
+            get: { currentID },
+            set: { newValue in
+                if let newValue, newValue != currentID {
+                    currentID = newValue
+                }
+            }
+        )
+    }
+
+    private var stripHeightFraction: CGFloat {
+        CGFloat(FrameGeometry.bottomRatio(of: FrameGeometry.computeFrameLayout()))
+    }
+
     init(id: String, openedFromCapture: Bool) {
-        self.id = id
         self.openedFromCapture = openedFromCapture
+        _currentID = State(initialValue: id)
         _isDeveloping = State(initialValue: openedFromCapture && !UIAccessibility.isReduceMotionEnabled)
     }
 
@@ -64,8 +135,8 @@ struct ProcessView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                 }
-            } else if let record {
-                content(record)
+            } else if record != nil || openedFromCapture {
+                content
             } else {
                 ProgressView()
                     .tint(AppTheme.textPrimary)
@@ -73,6 +144,7 @@ struct ProcessView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppTheme.surface.ignoresSafeArea())
+        .background(InteractivePopGestureDisabler(disabled: !openedFromCapture && !missing))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -94,16 +166,16 @@ struct ProcessView: View {
                             .font(AppType.caption(13, weight: .semibold))
                             .appChromeText()
                     }
-                    .foregroundStyle(isFlipped ? AppTheme.accentText : AppTheme.textPrimary)
+                    .foregroundStyle(flipChipEmphasized ? AppTheme.accentText : AppTheme.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background {
                         Capsule(style: .continuous)
-                            .fill(isFlipped ? AppTheme.accentFill : AppTheme.surfaceRaised)
+                            .fill(flipChipEmphasized ? AppTheme.accentFill : AppTheme.surfaceRaised)
                             .overlay(
                                 Capsule(style: .continuous)
                                     .strokeBorder(
-                                        isFlipped
+                                        flipChipEmphasized
                                             ? AppTheme.accentFill
                                             : AppTheme.hairline.opacity(0.9),
                                         lineWidth: 1
@@ -112,19 +184,20 @@ struct ProcessView: View {
                     }
                     .scaleEffect(isFlipping ? 0.94 : 1)
                     .animation(
-                        reduceMotion ? .none : .spring(response: 0.28, dampingFraction: 0.72),
+                        reduceMotion ? .none : .easeOut(duration: 0.15),
                         value: isFlipping
                     )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isFlipped ? "flip to front" : "flip")
+                .accessibilityLabel(flipAccessibilityLabel)
                 .disabled(isDeveloping || isFlipping || showCaptionSheet || showBackNoteSheet || missing)
             }
         }
-        .confirmationDialog("delete this print?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-            Button("delete", role: .destructive) { performDelete() }
-            Button("cancel", role: .cancel) {}
-        }
+        .deleteConfirmModal(
+            isPresented: $showDeleteConfirm,
+            message: Brand.deleteConfirmOne,
+            onDelete: { performDelete() }
+        )
         .alert("photos access is off", isPresented: $showPhotosDenied) {
             Button("cancel", role: .cancel) {}
             Button("open settings") {
@@ -140,147 +213,379 @@ struct ProcessView: View {
         } message: {
             Text(alertMessage ?? "")
         }
-        .sheet(isPresented: $showCaptionSheet) {
-            CaptionEditSheet(
+        .sheet(isPresented: $showCaptionSheet, onDismiss: { flushPendingApply() }) {
+            FrontCaptionEditSheet(
                 draftMode: $draftMode,
                 draftCustom: $draftCustom,
                 draftFont: $draftFont,
+                draftFontSize: $draftFontSize,
                 draftCase: $draftCase,
-                onCancel: { showCaptionSheet = false },
-                onSave: { Task { await saveCaption() } }
+                draftHighlight: $draftHighlight,
+                draftDateFormat: $draftDateFormat,
+                onDone: { showCaptionSheet = false }
             )
             .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationContentInteraction(.scrolls)
+            .onChange(of: draftMode) { _, _ in scheduleFrontApply(delayMs: 300) }
+            .onChange(of: draftCustom) { _, _ in scheduleFrontApply(delayMs: 600) }
+            .onChange(of: draftFont) { _, _ in scheduleFrontApply(delayMs: 300) }
+            .onChange(of: draftFontSize) { _, _ in scheduleFrontApply(delayMs: 300) }
+            .onChange(of: draftCase) { _, _ in scheduleFrontApply(delayMs: 300) }
+            .onChange(of: draftHighlight) { _, _ in scheduleFrontApply(delayMs: 300) }
+            .onChange(of: draftDateFormat) { _, _ in scheduleFrontApply(delayMs: 300) }
         }
-        .sheet(isPresented: $showBackNoteSheet) {
-            BackNoteSheet(
+        .sheet(isPresented: $showBackNoteSheet, onDismiss: { flushPendingApply() }) {
+            BackNoteEditSheet(
                 draftNote: $draftBackNote,
                 draftFont: $draftBackFont,
-                onCancel: { showBackNoteSheet = false },
-                onSave: { Task { await saveBackNote() } }
+                draftFontSize: $draftBackFontSize,
+                draftCase: $draftBackCase,
+                onDone: { showBackNoteSheet = false }
             )
             .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationContentInteraction(.scrolls)
+            .onChange(of: draftBackNote) { _, _ in scheduleBackApply(delayMs: 600) }
+            .onChange(of: draftBackFont) { _, _ in scheduleBackApply(delayMs: 300) }
+            .onChange(of: draftBackFontSize) { _, _ in scheduleBackApply(delayMs: 300) }
+            .onChange(of: draftBackCase) { _, _ in scheduleBackApply(delayMs: 300) }
         }
-        .onAppear { reload() }
-        .onDisappear { saveResetTask?.cancel() }
+        .sheet(item: $sharePayload) { payload in
+            ActivityShareSheet(items: payload.items)
+        }
+        .onAppear {
+            // Repair index once on enter; paging thereafter stays in-memory (read-only).
+            store.reload()
+            reload(preferMemory: true)
+            prefetchNeighborThumbs()
+        }
+        .onChange(of: store.items) { _, _ in
+            reload(preferMemory: true)
+            prefetchNeighborThumbs()
+        }
+        .onChange(of: currentID) { _, _ in
+            resetTransientStateForNeighbor()
+            reload(preferMemory: true)
+            prefetchNeighborThumbs()
+        }
+        .onDisappear {
+            saveResetTask?.cancel()
+            applyTask?.cancel()
+        }
     }
 
-    private func content(_ record: PolaroidRecord) -> some View {
+    private var content: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 8)
-
-            Button {
-                guard !isDeveloping, !isFlipping else { return }
-                if isFlipped {
-                    draftBackNote = record.backNote ?? ""
-                    draftBackFont = record.backFont
-                    showBackNoteSheet = true
-                } else {
-                    draftMode = record.captionMode
-                    draftCustom = record.captionMode == .custom ? record.caption : ""
-                    draftFont = record.captionFont
-                    draftCase = inferredCase(for: record)
-                    showCaptionSheet = true
-                }
-            } label: {
-                flipCard(record)
-                    .padding(.horizontal, 20)
+            if emphasizeFlipForNote {
+                // Centered under the wordmark — quieter than trailing; flip chip carries the CTA.
+                Text(Brand.noteBehindHint)
+                    .font(AppType.caption(11))
+                    .appChromeText()
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AppTheme.pageGutter)
+                    .padding(.top, 4)
+                    .padding(.bottom, 2)
+                    .accessibilityLabel(Brand.noteBehindHint)
             }
-            .disabled(isDeveloping || isFlipping)
-            .accessibilityLabel(cardAccessibility(record))
+
+            Spacer(minLength: emphasizeFlipForNote ? 6 : 12)
+
+            Group {
+                if openedFromCapture {
+                    editableCard(id: currentID, record: record, showDevelop: isDeveloping)
+                        .padding(.horizontal, AppTheme.processCardGutter)
+                } else {
+                    ScrollView(.horizontal) {
+                        LazyHStack(spacing: 0) {
+                            ForEach(store.items) { item in
+                                editableCard(
+                                    id: item.id,
+                                    record: item.id == currentID ? record : item,
+                                    showDevelop: false
+                                )
+                                .padding(.horizontal, AppTheme.processCardGutter)
+                                .containerRelativeFrame(.horizontal)
+                                .id(item.id)
+                            }
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollIndicators(.hidden)
+                    .scrollTargetBehavior(.paging)
+                    .scrollPosition(id: scrollPositionID)
+                    .scrollDisabled(!galleryPagingEnabled)
+                }
+            }
+            .frame(maxWidth: .infinity)
 
             Text(hintText)
-                .font(AppType.caption(12))
+                .font(AppType.caption(13))
                 .appChromeText()
                 .foregroundStyle(AppTheme.textSecondary)
-                .padding(.top, 10)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+                .padding(.top, AppTheme.taglineGap)
+                .padding(.horizontal, 24)
 
             Spacer(minLength: 16)
 
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center, spacing: 16) {
-                    Spacer(minLength: 0)
+            HStack(alignment: .center, spacing: 16) {
+                actionButton(systemName: "square.and.arrow.up", label: "share print") {
+                    Task { await prepareShare() }
+                }
+                .disabled(isDeveloping || isFlipping || isSaving || record == nil)
 
-                    HStack(spacing: 16) {
-                        actionButton(systemName: "trash", label: "delete print") {
-                            showDeleteConfirm = true
+                Spacer(minLength: 0)
+
+                HStack(spacing: 16) {
+                    actionButton(systemName: "trash", label: "delete print") {
+                        showDeleteConfirm = true
+                    }
+                    .disabled(isDeveloping || record == nil)
+                    actionButton(
+                        systemName: saved ? "checkmark" : "photo.badge.arrow.down",
+                        label: saved
+                            ? "saved to photos"
+                            : (
+                                record?.hasBackNote == true
+                                    ? "download print and note to photos"
+                                    : "download print to photos"
+                            )
+                    ) {
+                        Task { await download() }
+                    }
+                    .disabled(isDeveloping || isSaving || record == nil)
+                }
+            }
+            .padding(.horizontal, AppTheme.pageGutter)
+            .padding(.bottom, 28)
+        }
+        .offset(y: max(0, dismissDrag))
+        .opacity(dismissDrag > 0 ? max(0.55, 1 - Double(dismissDrag) / 420) : 1)
+        .simultaneousGesture(swipeDownDismissGesture)
+    }
+
+    private var swipeDownDismissGesture: some Gesture {
+        DragGesture(minimumDistance: 28)
+            .onChanged { value in
+                guard swipeDownDismissEnabled else { return }
+                let dy = value.translation.height
+                let dx = abs(value.translation.width)
+                // Strong vertical dominance so horizontal paging keeps ownership.
+                guard dy > 0, dy > dx * 1.6 else {
+                    if dismissDrag != 0 { dismissDrag = 0 }
+                    return
+                }
+                dismissDrag = dy
+            }
+            .onEnded { value in
+                guard swipeDownDismissEnabled else {
+                    dismissDrag = 0
+                    return
+                }
+                let dy = value.translation.height
+                let dx = abs(value.translation.width)
+                let predicted = value.predictedEndTranslation.height
+                let shouldDismiss = dy > dx * 1.6
+                    && (dy > 110 || (dy > 64 && predicted > 320))
+                if shouldDismiss {
+                    if reduceMotion {
+                        dismissDrag = 0
+                        dismiss()
+                    } else {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            dismissDrag = UIScreen.main.bounds.height * 0.9
                         }
-                        .disabled(isDeveloping)
-                        actionButton(
-                            systemName: saved ? "checkmark" : "square.and.arrow.down",
-                            label: saved
-                                ? "saved to photos"
-                                : (isFlipped ? "download back to photos" : "download front to photos")
-                        ) {
-                            Task { await download() }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                            dismiss()
                         }
-                        .disabled(isDeveloping || isSaving)
+                    }
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        dismissDrag = 0
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
-        }
+    }
+
+    @ViewBuilder
+    private func editableCard(id: String, record: PolaroidRecord?, showDevelop: Bool) -> some View {
+        let active = id == currentID
+        flipCard(id: id, record: record, showDevelop: showDevelop && active)
+            .overlay {
+                if active, !isDeveloping, !isFlipping, record != nil {
+                    GeometryReader { geo in
+                        if showingBackFace {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture { openBackNoteEditor() }
+                                .accessibilityLabel(cardAccessibility(record))
+                                .accessibilityAddTraits(.isButton)
+                        } else {
+                            VStack(spacing: 0) {
+                                Color.clear
+                                    .frame(height: max(0, geo.size.height * (1 - stripHeightFraction)))
+                                    .allowsHitTesting(false)
+                                Color.clear
+                                    .frame(height: geo.size.height * stripHeightFraction)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openCaptionEditor() }
+                                    .accessibilityLabel(cardAccessibility(record))
+                                    .accessibilityAddTraits(.isButton)
+                            }
+                        }
+                    }
+                }
+            }
     }
 
     private var hintText: String {
         if isDeveloping { return Brand.developing }
-        return isFlipped ? Brand.backHint : Brand.processHint
+        if showingBackFace { return Brand.backHint }
+        return Brand.processHint
     }
 
-    private func cardAccessibility(_ record: PolaroidRecord) -> String {
-        if isDeveloping { return "Developing" }
-        if isFlipped {
+    private var flipAccessibilityLabel: String {
+        if isFlipped { return "flip to front" }
+        if emphasizeFlipForNote { return "flip, note on the back" }
+        return "flip"
+    }
+
+    private func cardAccessibility(_ record: PolaroidRecord?) -> String {
+        guard let record, !isDeveloping else { return "Developing" }
+        if showingBackFace {
             if record.hasBackNote {
                 return "Back of print, \(record.backNote ?? "")"
             }
             return "Back of print, blank"
         }
         if record.caption.isEmpty {
-            return "Edit caption, blank"
+            return "Edit strip caption, blank"
         }
-        return "Edit caption, currently \(record.caption)"
+        return "Edit strip caption, currently \(record.caption)"
+    }
+
+    private func openCaptionEditor() {
+        guard let record, !isDeveloping, !isFlipping, !showingBackFace else { return }
+        draftMode = record.captionMode
+        draftCustom = record.captionMode == .custom ? record.caption : ""
+        draftFont = record.captionFont
+        draftFontSize = record.captionFontSize
+        draftCase = record.captionLetterCase
+        draftHighlight = record.captionHighlight
+        draftDateFormat = record.dateFormat
+        activeEditor = .front
+        showCaptionSheet = true
+    }
+
+    private func openBackNoteEditor() {
+        guard let record, !isDeveloping, !isFlipping, showingBackFace else { return }
+        draftBackNote = record.backNote ?? ""
+        if record.hasBackNote {
+            draftBackFont = record.backFont
+            draftBackFontSize = record.backFontSize
+            draftBackCase = record.backLetterCase
+        } else {
+            let defaults = settingsStore.settings
+            draftBackFont = defaults.backFont
+            draftBackFontSize = defaults.backFontSize
+            draftBackCase = defaults.backLetterCase
+        }
+        activeEditor = .back
+        showBackNoteSheet = true
     }
 
     @ViewBuilder
-    private func flipCard(_ record: PolaroidRecord) -> some View {
-        let showingBack = flipAngle >= 90
+    private func flipCard(id: String, record: PolaroidRecord?, showDevelop: Bool) -> some View {
+        let showingBack = flipAngle >= 90 && id == currentID
         ZStack {
-            if showingBack {
-                backFace(record)
+            if showingBack, let record {
+                backFace(id: id, record: record)
+                    .overlay {
+                        if hidePrintText, id == currentID {
+                            printTextCover(isBack: true)
+                        }
+                    }
                     .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
             } else {
-                frontFace
+                frontFace(id: id, showDevelop: showDevelop)
+                    .overlay {
+                        if hidePrintText, id == currentID {
+                            printTextCover(isBack: false)
+                        }
+                    }
             }
         }
+        .aspectRatio(FrameGeometry.canvasAspect, contentMode: .fit)
+        .clipped()
         .rotation3DEffect(
-            .degrees(flipAngle),
+            .degrees(id == currentID ? flipAngle : 0),
             axis: (x: 0, y: 1, z: 0),
             perspective: 0.6
         )
-        .shadow(color: .black.opacity(0.45), radius: 12, y: 6)
+        // Full shadow only on the current page; neighbors stay flat for older GPUs.
+        // Collapse further while the current card is spinning.
+        .shadow(
+            color: id == currentID
+                ? .black.opacity(isFlipping ? 0.08 : 0.35)
+                : .clear,
+            radius: id == currentID ? (isFlipping ? 2 : 10) : 0,
+            y: id == currentID ? (isFlipping ? 1 : 5) : 0
+        )
     }
 
-    private var frontFace: some View {
-        PolaroidThumb(url: store.polaroidURL(for: id), refreshToken: bust)
-            .frame(maxWidth: .infinity)
+    /// Paper cover over burned caption / note so text doesn't warp mid-flip.
+    private func printTextCover(isBack: Bool) -> some View {
+        GeometryReader { geo in
+            if isBack {
+                AppTheme.paper
+            } else {
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: max(0, geo.size.height * (1 - stripHeightFraction)))
+                    AppTheme.paper
+                        .frame(height: geo.size.height * stripHeightFraction)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func frontFace(id: String, showDevelop: Bool) -> some View {
+        PolaroidThumb(
+            url: store.polaroidURL(for: id),
+            refreshToken: id == currentID ? bust : 0,
+            maxPixel: ThumbnailCache.processMaxPixel
+        )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay {
-                if isDeveloping {
-                    DevelopingOverlay(reduceMotion: reduceMotion, duration: 3) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            isDeveloping = false
-                        }
+                if showDevelop {
+                    DevelopingOverlay(
+                        reduceMotion: reduceMotion,
+                        labelHold: 0.8,
+                        fadeDuration: 2.0,
+                        printReady: record != nil
+                    ) {
+                        overlayElapsed = true
+                        maybeRevealPrint()
                     }
                 }
             }
-            .clipped()
     }
 
     @ViewBuilder
-    private func backFace(_ record: PolaroidRecord) -> some View {
+    private func backFace(id: String, record: PolaroidRecord) -> some View {
         let url = store.backURL(for: id)
         if record.hasBackNote, FileManager.default.fileExists(atPath: url.path) {
-            PolaroidThumb(url: url, refreshToken: backBust)
-                .frame(maxWidth: .infinity)
+            PolaroidThumb(
+                url: url,
+                refreshToken: id == currentID ? backBust : 0,
+                maxPixel: ThumbnailCache.processMaxPixel
+            )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             blankBackPlaceholder
         }
@@ -288,32 +593,31 @@ struct ProcessView: View {
 
     private var blankBackPlaceholder: some View {
         let layout = FrameGeometry.computeFrameLayout()
-        let aspect = CGFloat(layout.canvasWidth) / CGFloat(layout.canvasHeight)
         let insetFraction = CGFloat(layout.side) * 0.55 / CGFloat(layout.canvasWidth)
-        return Color.clear
-            .aspectRatio(aspect, contentMode: .fit)
+        return AppTheme.paper
+            .overlay {
+                GeometryReader { geo in
+                    RoundedRectangle(cornerRadius: 1)
+                        .stroke(AppTheme.graphite.opacity(0.72), lineWidth: 2.5)
+                        .padding(geo.size.width * insetFraction)
+                }
+            }
             .overlay(
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(AppTheme.paper)
-                    .overlay {
-                        GeometryReader { geo in
-                            RoundedRectangle(cornerRadius: 1)
-                                .stroke(AppTheme.graphite.opacity(0.72), lineWidth: 2.5)
-                                .padding(geo.size.width * insetFraction)
-                        }
-                    }
-                    .overlay(
-                        Text(Brand.wordmark)
-                            .font(AppType.micro(11))
-                            .appChromeText()
-                            .foregroundStyle(AppTheme.graphite.opacity(0.28))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                            .padding(.bottom, 28)
-                    )
+                Text(Brand.wordmark)
+                    .font(AppType.micro(11))
+                    .appChromeText()
+                    .foregroundStyle(AppTheme.graphite.opacity(0.28))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 28)
             )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func actionButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
+    private func actionButton(
+        systemName: String,
+        label: String,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 22))
@@ -327,6 +631,8 @@ struct ProcessView: View {
         guard !isFlipping else { return }
         isFlipping = true
         Haptics.lightTap()
+        flipGeneration += 1
+        let generation = flipGeneration
 
         if reduceMotion {
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -334,58 +640,111 @@ struct ProcessView: View {
                 flipAngle = isFlipped ? 180 : 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                guard generation == flipGeneration else { return }
                 isFlipping = false
             }
             return
         }
 
         let target = isFlipped ? 0.0 : 180.0
-        withAnimation(.easeInOut(duration: 0.45)) {
-            flipAngle = target
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-            isFlipped = target == 180
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.46) {
-            isFlipping = false
+        // Cover burned text first; wait one short beat so the cover commits before rotation.
+        hidePrintText = true
+        let coverDelay: TimeInterval = 0.06
+        let rotateDuration: TimeInterval = 0.45
+        DispatchQueue.main.asyncAfter(deadline: .now() + coverDelay) {
+            guard generation == flipGeneration else { return }
+            withAnimation(.easeInOut(duration: rotateDuration)) {
+                flipAngle = target
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + rotateDuration * 0.5) {
+                guard generation == flipGeneration else { return }
+                isFlipped = target == 180
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + rotateDuration) {
+                guard generation == flipGeneration else { return }
+                hidePrintText = false
+                isFlipping = false
+            }
         }
     }
 
-    private func reload() {
-        if let item = store.polaroid(id: id) {
+    private func resetTransientStateForNeighbor() {
+        flipGeneration += 1
+        showCaptionSheet = false
+        showBackNoteSheet = false
+        applyTask?.cancel()
+        applyTask = nil
+        activeEditor = .none
+        sharePayload = nil
+        saved = false
+        isFlipped = false
+        flipAngle = 0
+        isFlipping = false
+        hidePrintText = false
+        bust = 0
+        backBust = 0
+    }
+
+    /// Resolve the active print. Prefer in-memory `store.items` on swipe; disk+repair only as fallback.
+    private func reload(preferMemory: Bool) {
+        let item: PolaroidRecord?
+        if preferMemory {
+            item = store.items.first(where: { $0.id == currentID })
+                ?? store.polaroid(id: currentID)
+        } else {
+            item = store.polaroid(id: currentID)
+        }
+
+        if let item {
+            let wasNil = record == nil || record?.id != item.id
             record = item
             missing = false
+            if wasNil { bust += 1 }
+            maybeRevealPrint()
+        } else if openedFromCapture {
+            missing = false
+        } else if store.items.contains(where: { $0.id == currentID }) == false {
+            // Swiped away from a deleted neighbor — snap to nearest remaining print.
+            if let first = store.items.first {
+                currentID = first.id
+                missing = false
+            } else {
+                missing = true
+            }
         } else {
             missing = true
         }
     }
 
-    private func performDelete() {
-        do {
-            try store.delete(id: id)
-            dismiss()
-        } catch {
-            alertMessage = error.localizedDescription
-            showAlert = true
+    private func prefetchNeighborThumbs() {
+        guard !openedFromCapture else { return }
+        let urls = GalleryPagingLogic.neighborIDs(items: store.items, currentID: currentID)
+            .map { store.polaroidURL(for: $0) }
+        ThumbnailCache.prefetch(urls: urls, refreshToken: 0, maxPixel: ThumbnailCache.processMaxPixel)
+    }
+
+    private func maybeRevealPrint() {
+        guard overlayElapsed || !isDeveloping else { return }
+        guard record != nil else { return }
+        guard isDeveloping else { return }
+        withAnimation(.easeOut(duration: 0.25)) {
+            isDeveloping = false
         }
     }
 
-    private func inferredCase(for record: PolaroidRecord) -> DateCaseStyle {
-        let captureDate = Caption.parseISODate(record.createdAt) ?? Date()
-        switch record.captionMode {
-        case .date:
-            let sentence = Caption.formatDate(
-                captureDate,
-                format: settingsStore.settings.dateFormat,
-                letterCase: .sentence
-            )
-            return record.caption == sentence ? .sentence : settingsStore.settings.dateCase
-        case .custom:
-            return record.caption == DateCaseStyle.sentence.apply(record.caption)
-                ? .sentence
-                : .lowercase
-        case .blank:
-            return settingsStore.settings.dateCase
+    private func performDelete() {
+        do {
+            try store.delete(id: currentID)
+            if openedFromCapture || store.items.isEmpty {
+                dismiss()
+            } else if let next = store.items.first {
+                currentID = next.id
+            } else {
+                dismiss()
+            }
+        } catch {
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
     }
 
@@ -395,24 +754,28 @@ struct ProcessView: View {
         isSaving = true
         defer { isSaving = false }
 
+        let front = store.polaroidURL(for: currentID)
+        let back = store.backURL(for: currentID)
+        let hasNoteFile = record?.hasBackNote == true
+            && FileManager.default.fileExists(atPath: back.path)
+
         let result: PhotoLibrarySaveResult
-        if isFlipped {
-            let back = store.backURL(for: id)
-            if FileManager.default.fileExists(atPath: back.path) {
-                result = await PhotoLibrarySaver.saveImage(at: back)
-            } else {
-                do {
-                    let image = try PolaroidPipeline.renderBlankBack()
-                    guard let png = image.pngData() else { throw PipelineError.encodeFailed }
-                    result = await PhotoLibrarySaver.saveImage(data: png)
-                } catch {
-                    alertMessage = error.localizedDescription
-                    showAlert = true
-                    return
-                }
+        if hasNoteFile {
+            // Noted prints: always save front + back together.
+            result = await PhotoLibrarySaver.saveImages(at: [front, back])
+        } else if showingBackFace {
+            // Blank reverse — render on the fly (no note file).
+            do {
+                let image = try PolaroidPipeline.renderBlankBack()
+                guard let png = image.pngData() else { throw PipelineError.encodeFailed }
+                result = await PhotoLibrarySaver.saveImage(data: png)
+            } catch {
+                alertMessage = error.localizedDescription
+                showAlert = true
+                return
             }
         } else {
-            result = await PhotoLibrarySaver.saveImage(at: store.polaroidURL(for: id))
+            result = await PhotoLibrarySaver.saveImage(at: front)
         }
 
         switch result {
@@ -433,7 +796,58 @@ struct ProcessView: View {
         }
     }
 
-    private func saveCaption() async {
+    private func scheduleFrontApply(delayMs: UInt64) {
+        applyTask?.cancel()
+        applyTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+            guard !Task.isCancelled else { return }
+            await applyFrontDraft()
+        }
+    }
+
+    private func scheduleBackApply(delayMs: UInt64) {
+        applyTask?.cancel()
+        applyTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+            guard !Task.isCancelled else { return }
+            await applyBackDraft()
+        }
+    }
+
+    private func flushPendingApply() {
+        applyTask?.cancel()
+        applyTask = nil
+        let kind = activeEditor
+        activeEditor = .none
+        if let lastApplyCompletedAt,
+           Date().timeIntervalSince(lastApplyCompletedAt) < 0.15
+        {
+            return
+        }
+        Task { @MainActor in
+            switch kind {
+            case .front:
+                await applyFrontDraft()
+            case .back:
+                await applyBackDraft()
+            case .none:
+                break
+            }
+        }
+    }
+
+    private func applyFrontDraft() async {
+        guard let record else { return }
+        guard Caption.frontBurnNeeded(
+            record: record,
+            mode: draftMode,
+            customText: draftCustom,
+            font: draftFont,
+            fontSize: draftFontSize,
+            letterCase: draftCase,
+            dateFormat: draftDateFormat,
+            highlight: draftHighlight
+        ) else { return }
         var custom = draftCustom
         if draftMode == .custom {
             custom = draftCase.apply(Caption.truncateCaption(draftCustom))
@@ -442,39 +856,59 @@ struct ProcessView: View {
             mode: draftMode,
             custom: custom,
             font: draftFont,
-            dateCase: draftCase
+            fontSize: draftFontSize,
+            dateCase: draftCase,
+            dateFormat: draftDateFormat,
+            highlight: draftHighlight
         )
-        showCaptionSheet = false
     }
 
-    private func saveBackNote() async {
+    private func applyBackDraft() async {
+        guard let record else { return }
+        guard Caption.backBurnNeeded(
+            record: record,
+            note: draftBackNote,
+            font: draftBackFont,
+            fontSize: draftBackFontSize,
+            letterCase: draftBackCase
+        ) else { return }
         guard !isReburning else { return }
         isReburning = true
         defer { isReburning = false }
         do {
             let trimmed = Caption.truncateBackNote(draftBackNote)
-            if trimmed.isEmpty {
+            let cased = draftBackCase.apply(trimmed)
+            if cased.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 try store.updateBackNote(
-                    id: id,
+                    id: currentID,
                     backNote: nil,
                     backFont: draftBackFont,
+                    backFontSize: draftBackFontSize,
+                    backLetterCase: draftBackCase,
                     backPNG: nil
                 )
             } else {
-                let image = try PolaroidPipeline.renderBack(note: trimmed, font: draftBackFont)
+                let image = try PolaroidPipeline.renderBack(
+                    note: trimmed,
+                    font: draftBackFont,
+                    fontSize: draftBackFontSize,
+                    letterCase: draftBackCase
+                )
                 guard let png = image.pngData() else {
                     throw PipelineError.encodeFailed
                 }
                 try store.updateBackNote(
-                    id: id,
-                    backNote: trimmed,
+                    id: currentID,
+                    backNote: cased,
                     backFont: draftBackFont,
+                    backFontSize: draftBackFontSize,
+                    backLetterCase: draftBackCase,
                     backPNG: png
                 )
             }
             backBust += 1
-            reload()
-            showBackNoteSheet = false
+            lastApplyCompletedAt = Date()
+            reload(preferMemory: true)
         } catch {
             alertMessage = error.localizedDescription
             showAlert = true
@@ -485,219 +919,85 @@ struct ProcessView: View {
         mode: CaptionMode,
         custom: String,
         font: CaptionFont,
-        dateCase: DateCaseStyle? = nil
+        fontSize: CaptionFontSize,
+        dateCase: DateCaseStyle? = nil,
+        dateFormat: DateFormatOption? = nil,
+        highlight: Bool? = nil
     ) async {
         guard let record, !isReburning else { return }
         isReburning = true
         defer { isReburning = false }
+        let useHighlight = highlight ?? record.captionHighlight
+        let burnFormat = dateFormat ?? record.dateFormat
+        let burnCase = dateCase ?? record.captionLetterCase
         do {
-            let data = try Data(contentsOf: store.originalURL(for: id))
+            let data = try Data(contentsOf: store.originalURL(for: currentID))
             let burnDate = Caption.parseISODate(record.createdAt) ?? Date()
-            let burnCase = dateCase ?? settingsStore.settings.dateCase
             let result = try PolaroidPipeline.reburnCaption(
                 squareJPEG: data,
                 captionMode: mode,
-                dateFormat: settingsStore.settings.dateFormat,
+                dateFormat: burnFormat,
                 dateCase: burnCase,
                 customText: custom,
                 captionFont: font,
-                captionHighlight: record.captionHighlight,
-                date: burnDate
+                captionFontSize: fontSize,
+                captionHighlight: useHighlight,
+                date: burnDate,
+                filmStock: record.filmStock,
+                filmStrength: record.filmStrength,
+                serendipitySeed: currentID
             )
             try store.updateCaption(
-                id: id,
+                id: currentID,
                 caption: result.caption,
                 captionMode: mode,
                 captionFont: font,
-                captionHighlight: record.captionHighlight,
+                captionFontSize: fontSize,
+                captionHighlight: useHighlight,
+                captionLetterCase: burnCase,
+                dateFormat: burnFormat,
                 polaroidPNG: result.png
             )
             bust += 1
-            reload()
+            ThumbnailCache.invalidate(url: store.polaroidURL(for: currentID))
+            lastApplyCompletedAt = Date()
+            reload(preferMemory: true)
         } catch {
             alertMessage = error.localizedDescription
             showAlert = true
         }
     }
-}
 
-private struct CaptionEditSheet: View {
-    @Binding var draftMode: CaptionMode
-    @Binding var draftCustom: String
-    @Binding var draftFont: CaptionFont
-    @Binding var draftCase: DateCaseStyle
-    var onCancel: () -> Void
-    var onSave: () -> Void
-
-    @State private var showCustomPrompt = false
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("strip text") {
-                    ForEach(CaptionMode.allCases) { mode in
-                        Button {
-                            if mode == .custom {
-                                showCustomPrompt = true
-                            } else {
-                                draftMode = mode
-                            }
-                        } label: {
-                            HStack {
-                                Text(mode.label)
-                                    .font(AppType.body(17))
-                                    .appChromeText()
-                                    .foregroundStyle(AppTheme.textPrimary)
-                                Spacer()
-                                if draftMode == mode {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(AppTheme.textPrimary)
-                                }
-                            }
-                            .frame(minHeight: AppTheme.hitTarget)
-                        }
-                    }
-                    if draftMode == .custom, !draftCustom.isEmpty {
-                        Text(draftCustom)
-                            .font(AppType.body(15))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .onTapGesture { showCustomPrompt = true }
-                    }
+    @MainActor
+    private func prepareShare() async {
+        do {
+            let image: UIImage
+            if showingBackFace {
+                let back = store.backURL(for: currentID)
+                if FileManager.default.fileExists(atPath: back.path),
+                   let loaded = UIImage(contentsOfFile: back.path)
+                {
+                    image = loaded
+                } else if let record, record.hasBackNote, let note = record.backNote {
+                    image = try PolaroidPipeline.renderBack(
+                        note: note,
+                        font: record.backFont,
+                        fontSize: record.backFontSize,
+                        letterCase: record.backLetterCase
+                    )
+                } else {
+                    image = try PolaroidPipeline.renderBlankBack()
                 }
-
-                Section("font") {
-                    ForEach(CaptionFont.allCases) { font in
-                        Button {
-                            draftFont = font
-                        } label: {
-                            HStack {
-                                Text(font.label)
-                                    .font(Font(font.previewFont()))
-                                    .appChromeText()
-                                    .foregroundStyle(AppTheme.textPrimary)
-                                Spacer()
-                                if draftFont == font {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(AppTheme.textPrimary)
-                                }
-                            }
-                            .frame(minHeight: AppTheme.hitTarget)
-                        }
-                    }
+            } else {
+                guard let loaded = UIImage(contentsOfFile: store.polaroidURL(for: currentID).path) else {
+                    throw PipelineError.decodeFailed
                 }
-
-                Section("letter case") {
-                    ForEach(DateCaseStyle.allCases) { style in
-                        Button {
-                            draftCase = style
-                        } label: {
-                            HStack {
-                                Text(style.apply(style.label))
-                                    .font(AppType.body(17))
-                                    .foregroundStyle(AppTheme.textPrimary)
-                                Spacer()
-                                if draftCase == style {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(AppTheme.textPrimary)
-                                }
-                            }
-                            .frame(minHeight: AppTheme.hitTarget)
-                        }
-                    }
-                }
+                image = loaded
             }
-            .scrollContentBackground(.hidden)
-            .background(AppTheme.surface)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("cancel", action: onCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("save", action: onSave)
-                        .fontWeight(.semibold)
-                }
-            }
-            .sheet(isPresented: $showCustomPrompt) {
-                CustomCaptionPrompt(
-                    text: $draftCustom,
-                    onCancel: { showCustomPrompt = false },
-                    onSave: {
-                        draftMode = .custom
-                        draftCustom = Caption.truncateCaption(draftCustom)
-                        showCustomPrompt = false
-                    }
-                )
-            }
-        }
-    }
-}
-
-private struct BackNoteSheet: View {
-    @Binding var draftNote: String
-    @Binding var draftFont: CaptionFont
-    var onCancel: () -> Void
-    var onSave: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("note") {
-                    TextEditor(text: $draftNote)
-                        .font(Font(draftFont.previewFont(size: 17)))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .frame(minHeight: 140)
-                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-                        .onChange(of: draftNote) { _, newValue in
-                            if newValue.count > Caption.backMaxLength {
-                                draftNote = String(newValue.prefix(Caption.backMaxLength))
-                            }
-                        }
-
-                    Text("\(draftNote.count)/\(Caption.backMaxLength)")
-                        .font(AppType.caption(13, weight: .medium).monospacedDigit())
-                        .appChromeText()
-                        .foregroundStyle(
-                            draftNote.count >= Caption.backMaxLength
-                                ? AppTheme.destructive
-                                : AppTheme.textSecondary
-                        )
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-
-                Section("font") {
-                    ForEach(CaptionFont.allCases) { font in
-                        Button {
-                            draftFont = font
-                        } label: {
-                            HStack {
-                                Text(font.label)
-                                    .font(Font(font.previewFont()))
-                                    .appChromeText()
-                                    .foregroundStyle(AppTheme.textPrimary)
-                                Spacer()
-                                if draftFont == font {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(AppTheme.textPrimary)
-                                }
-                            }
-                            .frame(minHeight: AppTheme.hitTarget)
-                        }
-                    }
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .background(AppTheme.surface.ignoresSafeArea())
-            .navigationTitle("back note")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("cancel", action: onCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("save", action: onSave)
-                        .fontWeight(.semibold)
-                }
-            }
+            sharePayload = SharePayload(items: [image])
+        } catch {
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
     }
 }

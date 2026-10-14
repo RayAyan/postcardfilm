@@ -1,0 +1,29 @@
+---
+description: test for work; main for TestFlight; release only when human says production shipped.
+alwaysApply: true
+---
+
+# Branching (hard rule)
+
+See [`docs/BRANCHING.md`](docs/BRANCHING.md).
+
+| Branch | Use |
+|--------|-----|
+| **`test`** | All development. Default. Stay here. |
+| **`main`** | TestFlight / App Store **candidate**. Archive + upload here. No feature commits. |
+| **`release`** | Production ledger only. |
+
+## Never
+
+- Commit or feature-work on **`main`** or **`release`**.
+- Touch **`release`** or open/merge **`main` → `release`** unless the human **explicitly** says the build is **live in production** (Distribute / customers). TestFlight or “approved” alone is not enough.
+- Open a PR from **`test` → `release`**.
+- Leave the working branch on **`main`** after a promote — switch back to **`test`**.
+
+## Film debug picker
+
+**DEBUG + `test` only.** Never visible on `main` / TestFlight / App Store / `release`. Keep `#if DEBUG` + `BuildChannel.isTestBranch`. See [`.cursor/rules/film-debug-picker.mdc`](film-debug-picker.mdc).
+
+## Gallery
+
+Never wipe `Documents/polaroids`. See [`.cursor/rules/gallery-persistence.mdc`](gallery-persistence.mdc).

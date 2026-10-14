@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Shared custom-caption editor with visible character limit.
+/// Edits apply through the binding; only a done button dismisses.
 struct CustomCaptionPrompt: View {
     @Binding var text: String
     var title: String = "custom text"
     var placeholder: String = "write something"
-    var onCancel: () -> Void
-    var onSave: () -> Void
+    var onDone: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -37,16 +37,13 @@ struct CustomCaptionPrompt: View {
 
                 Spacer()
             }
-            .padding(16)
+            .padding(AppTheme.pageGutter)
             .background(AppTheme.surface.ignoresSafeArea())
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("cancel", action: onCancel)
-                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("save", action: onSave)
+                    Button("done", action: onDone)
                         .fontWeight(.semibold)
                 }
             }

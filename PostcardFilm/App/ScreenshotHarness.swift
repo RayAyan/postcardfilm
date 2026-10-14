@@ -1,10 +1,14 @@
-#if DEBUG
+#if DEBUG && targetEnvironment(simulator)
 import SwiftUI
 import UIKit
 
-/// Debug-only support for capturing App Store screenshots in the Simulator, which
-/// has no camera. Launch with `-SCREENSHOTS -SCREENSHOT_SCREEN <screen>` and place
-/// square source photos in the app container's `Documents/_seed`.
+/// Simulator DEBUG-only support for capturing App Store screenshots (no camera).
+/// Launch with `-SCREENSHOTS -SCREENSHOT_SCREEN <screen>` and place square source
+/// photos (see `Marketing/seed/00.jpg`…) in the app container's `Documents/_seed`.
+///
+/// Hard rule: never wipe `Documents/polaroids`. Seed only upserts `seed-*` folders
+/// and merges into the index so real UUID prints survive. See
+/// `.cursor/rules/gallery-persistence.mdc`.
 enum ScreenshotHarness {
     enum Screen: String {
         case home
@@ -57,12 +61,15 @@ enum ScreenshotHarness {
         guard !images.isEmpty else { return }
 
         let root = documents.appendingPathComponent("polaroids", isDirectory: true)
-        try? FileManager.default.removeItem(at: root)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 
+        // Refresh only seed-* folders. Never remove the polaroids root or UUID prints.
+        removeSeedFolders(under: root)
+
+        let existingIndex = readIndex(at: root)
         let stamp = ISO8601DateFormatter()
         stamp.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        var records: [PolaroidRecord] = []
+        var seedRecords: [PolaroidRecord] = []
 
         for (offset, sample) in samples.prefix(sampleLimit).enumerated() {
             let image = images[sample.photo % images.count]
@@ -76,7 +83,9 @@ enum ScreenshotHarness {
                 customText: sample.caption ?? "",
                 captionFont: sample.font,
                 captionHighlight: sample.highlight,
-                date: date
+                date: date,
+                filmStock: .onestep,
+                serendipitySeed: String(format: "seed-%02d", offset)
             ) else { continue }
 
             let id = String(format: "seed-%02d", offset)
@@ -97,7 +106,7 @@ enum ScreenshotHarness {
                 }
             }
 
-            records.append(
+            seedRecords.append(
                 PolaroidRecord(
                     id: id,
                     createdAt: stamp.string(from: date),
@@ -106,16 +115,48 @@ enum ScreenshotHarness {
                     captionFont: sample.font,
                     captionHighlight: sample.highlight,
                     backNote: backNote,
-                    backFont: sample.font
+                    backFont: sample.font,
+                    filmStock: .onestep
                 )
             )
         }
 
-        let index = PolaroidIndex(version: 1, items: records)
+        let merged = PolaroidIndexLogic.mergingScreenshotSeeds(
+            existing: existingIndex.items,
+            seeds: seedRecords
+        )
+        let index = PolaroidIndex(version: 1, items: merged)
         try? PolaroidIndexLogic.serialize(index)
             .data(using: .utf8)?
             .write(to: root.appendingPathComponent("index.json"))
         store.reload()
+    }
+
+    /// Deletes only `seed-*` print folders. Never touches UUID folders or the root.
+    private static func removeSeedFolders(under root: URL) {
+        guard let urls = try? FileManager.default.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        for url in urls {
+            let id = url.lastPathComponent
+            guard id.hasPrefix("seed-") else { continue }
+            let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
+            guard values?.isDirectory == true else { continue }
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private static func readIndex(at root: URL) -> PolaroidIndex {
+        let indexURL = root.appendingPathComponent("index.json")
+        guard let data = try? Data(contentsOf: indexURL),
+              let raw = String(data: data, encoding: .utf8)
+        else {
+            return .empty
+        }
+        return PolaroidIndexLogic.parse(raw)
     }
 
     private struct Sample {
@@ -128,9 +169,9 @@ enum ScreenshotHarness {
     }
 
     private static let samples: [Sample] = [
-        Sample(photo: 2, caption: "Kananaskis Lake", backNote: "the water was freezing and we stayed anyway.", font: .script),
-        Sample(photo: 0, caption: nil, font: .serif),
-        Sample(photo: 1, caption: "sandymount", font: .typewriter),
+        Sample(photo: 0, caption: "Kananaskis Lake", backNote: "the water was freezing and we stayed anyway.", font: .script),
+        Sample(photo: 1, caption: nil, font: .serif),
+        Sample(photo: 2, caption: "sandymount", font: .typewriter),
     ]
 
     private static var documents: URL {

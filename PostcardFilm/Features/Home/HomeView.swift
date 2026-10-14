@@ -3,14 +3,21 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var store: PolaroidStore
     @EnvironmentObject private var settingsStore: SettingsStore
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var camera = CameraController()
 
     @State private var path = NavigationPath()
     @State private var capturing = false
     @State private var shutterFlash = false
+    /// Opaque white fill for selfie screen flash (stays up through exposure).
+    @State private var screenFlash = false
     @State private var shutterPressed = false
     @State private var captureError: String?
     @State private var showCaptureAlert = false
+    #if DEBUG
+    @StateObject private var filmDebug = FilmDebugSession()
+    @State private var showFilmDebugSheet = false
+    #endif
 
     private var reduceMotion: Bool {
         UIAccessibility.isReduceMotionEnabled
@@ -18,7 +25,7 @@ struct HomeView: View {
 
     /// False when the debug screenshot harness stands in for the camera.
     private var usesCamera: Bool {
-        #if DEBUG
+        #if DEBUG && targetEnvironment(simulator)
         return !ScreenshotHarness.isActive
         #else
         return true
@@ -30,7 +37,7 @@ struct HomeView: View {
             ZStack {
                 AppTheme.surface.ignoresSafeArea()
                 content
-                if shutterFlash {
+                if shutterFlash || screenFlash {
                     Color.white
                         .ignoresSafeArea()
                         .allowsHitTesting(false)
@@ -53,6 +60,11 @@ struct HomeView: View {
             } message: {
                 Text(captureError ?? "could not take the photo. try again.")
             }
+            #if DEBUG
+            .sheet(isPresented: $showFilmDebugSheet) {
+                FilmDebugPickerSheet(session: filmDebug)
+            }
+            #endif
             .task {
                 if usesCamera {
                     await camera.requestPermissionIfNeeded()
@@ -69,6 +81,10 @@ struct HomeView: View {
                 if usesCamera, camera.permission == .authorized {
                     Task { await camera.configureAndStart() }
                 }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard usesCamera, phase == .active, camera.permission == .authorized else { return }
+                Task { await camera.resume() }
             }
         }
     }
@@ -93,8 +109,18 @@ struct HomeView: View {
                     .appChromeText()
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 14)
+                    .padding(.top, AppTheme.taglineGap)
                     .padding(.horizontal, 24)
+
+                #if DEBUG
+                if FilmDebugSession.isAvailable {
+                    FilmDebugChip(session: filmDebug) {
+                        showFilmDebugSheet = true
+                    }
+                    .padding(.top, 10)
+                    .disabled(capturing)
+                }
+                #endif
 
                 Spacer(minLength: 20)
 
@@ -168,12 +194,6 @@ struct HomeView: View {
                     .fill(AppTheme.surfaceRaised)
                 preview
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                if capturing {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.25))
-                    ProgressView()
-                        .tint(.white)
-                }
             }
             .frame(width: side, height: side)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -183,7 +203,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var preview: some View {
-        #if DEBUG
+        #if DEBUG && targetEnvironment(simulator)
         if ScreenshotHarness.isActive {
             ScreenshotViewfinder()
         } else {
@@ -205,9 +225,10 @@ struct HomeView: View {
                     .frame(width: AppTheme.hitTarget, height: AppTheme.hitTarget)
             }
             .accessibilityLabel("Flip camera")
-            .disabled(capturing)
+            .disabled(capturing || camera.isSwitchingCamera)
 
             Button {
+                // Fire immediately on press — flash/pipeline stay silent after this click.
                 Haptics.shutter()
                 Task { await capture() }
             } label: {
@@ -223,29 +244,22 @@ struct HomeView: View {
                 .scaleEffect(shutterPressed ? 0.88 : 1)
             }
             .accessibilityLabel("Capture")
-            .disabled(capturing || (usesCamera && camera.permission != .authorized))
+            .disabled(
+                capturing
+                    || camera.isSwitchingCamera
+                    || (usesCamera && camera.permission != .authorized)
+            )
 
-            ZStack(alignment: .bottomTrailing) {
-                Button {
-                    camera.cycleFlash()
-                } label: {
-                    Image(systemName: camera.flashMode.symbolName)
-                        .font(.system(size: 22))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .frame(width: AppTheme.hitTarget, height: AppTheme.hitTarget)
-                }
-                .accessibilityLabel(camera.flashMode.accessibilityLabel)
-                .disabled(capturing)
-
-                if camera.flashMode == .auto {
-                    Text("A")
-                        .font(AppType.micro(11, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .padding(.trailing, 4)
-                        .padding(.bottom, 2)
-                        .accessibilityHidden(true)
-                }
+            Button {
+                camera.toggleFlash()
+            } label: {
+                Image(systemName: camera.isFlashOn ? "bolt.fill" : "bolt.slash")
+                    .font(.system(size: 22))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .frame(width: AppTheme.hitTarget, height: AppTheme.hitTarget)
             }
+            .accessibilityLabel("Flash")
+            .accessibilityValue(camera.isFlashOn ? "on" : "off")
         }
     }
 
@@ -281,23 +295,64 @@ struct HomeView: View {
 
     private func capture() async {
         guard !capturing else { return }
-
-        if !reduceMotion {
-            withAnimation(.easeOut(duration: 0.06)) {
-                shutterPressed = true
-                shutterFlash = true
-            }
-            try? await Task.sleep(nanoseconds: 90_000_000)
-            withAnimation(.easeIn(duration: 0.12)) {
-                shutterFlash = false
-                shutterPressed = false
-            }
-        }
-
         capturing = true
+        let id = UUID().uuidString
+        var didPush = false
+        let plan = camera.flashPlan
+
         do {
-            let photo = try await camera.takePhoto()
+            let photo: UIImage
+            if plan == .screen {
+                // Functional lighting for selfie — wait for session/AE, shoot, then restore before push.
+                ScreenFlash.begin()
+                screenFlash = true
+                defer {
+                    ScreenFlash.end()
+                    screenFlash = false
+                }
+                if !reduceMotion {
+                    shutterPressed = true
+                }
+                // Brief settle so the white overlay is painted before AE reacts.
+                try? await Task.sleep(nanoseconds: 150_000_000)
+                photo = try await camera.takePhotoAfterScreenFlash()
+                shutterPressed = false
+            } else {
+                if !reduceMotion {
+                    withAnimation(.easeOut(duration: 0.06)) {
+                        shutterPressed = true
+                        shutterFlash = true
+                    }
+                }
+
+                async let photoWork = camera.capturePhotoResilient()
+
+                if !reduceMotion {
+                    try? await Task.sleep(nanoseconds: 90_000_000)
+                    withAnimation(.easeIn(duration: 0.12)) {
+                        shutterFlash = false
+                        shutterPressed = false
+                    }
+                }
+
+                path.append(PrintRoute.captured(id: id))
+                didPush = true
+                photo = try await photoWork
+            }
+
+            if !didPush {
+                path.append(PrintRoute.captured(id: id))
+                didPush = true
+            }
+
             let settings = settingsStore.settings
+            #if DEBUG
+            let forcedStock = filmDebug.overrideStock
+            let forcedStrength = filmDebug.overrideStrength
+            #else
+            let forcedStock: FilmStock? = nil
+            let forcedStrength: Double? = nil
+            #endif
             let processed = try await Task.detached(priority: .userInitiated) {
                 try PolaroidPipeline.processCapture(
                     image: photo,
@@ -306,23 +361,35 @@ struct HomeView: View {
                     dateCase: settings.dateCase,
                     customText: settings.customDefault,
                     captionFont: settings.captionFont,
-                    captionHighlight: settings.captionHighlight
+                    captionFontSize: settings.captionFontSize,
+                    captionHighlight: settings.captionHighlight,
+                    filmStock: forcedStock,
+                    filmStrength: forcedStrength,
+                    serendipitySeed: id
                 )
             }.value
-            let id = UUID().uuidString
             try store.create(
                 id: id,
                 caption: processed.caption,
                 captionMode: processed.captionMode,
                 captionFont: settings.captionFont,
+                captionFontSize: settings.captionFontSize,
                 captionHighlight: settings.captionHighlight,
+                captionLetterCase: settings.dateCase,
+                dateFormat: settings.dateFormat,
+                filmStock: processed.filmStock,
+                filmStrength: processed.filmStrength,
                 originalJPEG: processed.originalJPEG,
                 polaroidPNG: processed.polaroidPNG
             )
-
             capturing = false
-            path.append(PrintRoute.captured(id: id))
         } catch {
+            if didPush, !path.isEmpty {
+                path.removeLast()
+            }
+            shutterFlash = false
+            screenFlash = false
+            shutterPressed = false
             capturing = false
             captureError = error.localizedDescription
             showCaptureAlert = true

@@ -1,0 +1,34 @@
+---
+description: Film debug Manual picker is DEBUG + test-branch only — never on main/TestFlight/release.
+alwaysApply: true
+---
+
+# Film debug picker (hard rule)
+
+Developer-only **Auto / Manual** film control on Home. Forces one of the five pack stocks (and a gentle/medium/bold expression band) before shutter so calibration is inspectable. Product users never see stock names.
+
+## When it may exist
+
+- Compile only under `#if DEBUG` (entire UI + `FilmDebugSession` in [`FilmDebugPicker.swift`](PostcardFilm/Features/Home/FilmDebugPicker.swift)).
+- Hard kill switch `FilmDebugSession.menuEnabled` must be `true` **and** [`BuildChannel.isTestBranch`](PostcardFilm/Support/BuildChannel.generated.swift) (git branch `test`). Default `menuEnabled = false` — menu stays hidden until you flip it for calibration.
+- Day-to-day work stays on git branch **`test`**. See [`docs/BRANCHING.md`](docs/BRANCHING.md).
+
+## Never
+
+- Show Manual / artist-name chrome on **`main`**, **`release`**, **TestFlight**, or **App Store**.
+- Rely on branch alone: Archive is always **Release**, so `#if DEBUG` must stay — TestFlight from `main` never includes this UI.
+- Show the picker when the git branch is not **`test`** — even in a Debug Run on `main`.
+- Strip `#if DEBUG` or the `BuildChannel.isTestBranch` check when merging `test` → `main`.
+- Expose stock names or Manual controls in product Settings / Gallery / Process for end users.
+- Commit a hand-edited `BuildChannel.generated.swift` that claims `isTestBranch = true` on `main`; committed stub stays `false`; regenerate via the pre-build script.
+
+## Behavior
+
+- **Auto** (default): `FilmStock.draw()` + `FilmExpression.resolve`.
+- **Manual**: pass forced `filmStock` / `filmStrength` into `PolaroidPipeline.processCapture` — skip random generation only; Developing / milk UI unchanged.
+- All five stocks (including Matisse) support gentle / medium / bold bands in the picker.
+
+## Tests / docs
+
+- [`FilmDebugPickerTests`](PostcardFilmTests/FilmDebugPickerTests.swift) must stay green.
+- Human copy: [`docs/CALIBRATION.md`](docs/CALIBRATION.md), [`docs/BRANCHING.md`](docs/BRANCHING.md).

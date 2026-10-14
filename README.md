@@ -2,7 +2,7 @@
 
 Take a photo. It comes out as a Polaroid. Date on the white strip. Save, share, or throw it away.
 
-**Version 1 is released.** **1.0.0** is live on the [App Store](https://apps.apple.com/app/postcardfilm/id6806571862). `main` is that build. Next version work happens on `test`.
+**Version 1 is released.** **1.0.0** is live on the [App Store](https://apps.apple.com/app/postcardfilm/id6806571862). **`release`** is that build; day-to-day work is on **`test`** (GitHub default). See [`docs/BRANCHING.md`](docs/BRANCHING.md).
 
 **Native iPhone app (SwiftUI).** Not affiliated with Polaroid or Fujifilm. Photos stay on your phone — no accounts, no cloud, no Android.
 
@@ -68,30 +68,37 @@ swift Scripts/verify_logic.swift
 
 ## Versioning
 
-- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) and `Info.plist` (`1.0.0` / `1`)
-- Shown in Settings footer as `postcardfilm. 1.0.0`
+- Marketing version / build: `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in [`project.yml`](project.yml) (`1.2.0` / `3`); `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`
+- Shown in Settings footer as `postcardfilm. 1.2.0 (3)`
+- Bump helper: [`Scripts/cut-version.sh`](Scripts/cut-version.sh) (`./Scripts/cut-version.sh 1.2.1` or `minor` / `patch`)
 - Strategy (semver, What’s New voice, cut checklist): [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md)
-- Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md)
+- Log: [`CHANGELOG.md`](CHANGELOG.md) · index: [`docs/VERSIONS.md`](docs/VERSIONS.md) · open bugs: [`docs/BUGS.md`](docs/BUGS.md) · motions: [`docs/ANIMATIONS.md`](docs/ANIMATIONS.md)
 
 ### Cut a release
 
-Follow the checklist in [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Short version:
+Branches: [`docs/BRANCHING.md`](docs/BRANCHING.md). Checklist: [`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Short version:
 
-1. Move `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md`
-2. Draft short lowercase App Store “What’s New” from that section
-3. Bump `project.yml` + `Info.plist`, run `xcodegen generate`
-4. Row in `docs/VERSIONS.md`, tag `vx.y.z`, archive / upload
+1. On **`test`**: curate `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md` + short What’s New HTML comment
+2. `./Scripts/cut-version.sh x.y.z --notes "…"` (bumps `project.yml`, `xcodegen`, `docs/VERSIONS.md`)
+3. Commit; merge **`test` → `main`**; tag `vx.y.z`; **Archive from `main`** → TestFlight / App Store
+4. After you say **production shipped**: merge **`main` → `release`** (merge commit only); stay on **`test`**
 
 ### Store screenshots
 
-App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). The Simulator has no camera, so a DEBUG-only harness ([`ScreenshotHarness.swift`](PostcardFilm/App/ScreenshotHarness.swift)) seeds prints from square JPEGs in the app container's `Documents/_seed` and pins one screen:
+**Simulator only.** Never add `-SCREENSHOTS` to the scheme used to Run on a physical phone — the harness is compiled out of every device binary, and must never wipe real prints.
+
+App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). Finished sample prints live in `Marketing/AppStore/prints/`; square source JPEGs for the DEBUG harness live in `Marketing/seed/` (`00.jpg`…). Copy those into the **Simulator** app container's `Documents/_seed`, then:
 
 ```bash
 xcrun simctl launch <device> com.postcardfilm.app -SCREENSHOTS -SCREENSHOT_SCREEN gallery
 xcrun simctl io <device> screenshot --type=png shot.png
 ```
 
-Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 14 Plus / 12 Pro Max device type — its 3x screen is exactly the 6.5" upload size.
+Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 14 Plus / 12 Pro Max device type — its 3x screen is exactly the 6.5" upload size. Seed upserts `seed-*` folders only and merges the index (real UUID prints stay).
+
+## Gallery persistence
+
+**Hard rule:** while postcardfilm stays installed (`com.postcardfilm.app`), prints in `Documents/polaroids` survive TestFlight, App Store updates, **iOS OS upgrades**, Xcode Run, and any branch. Apple keeps the app’s Documents container across iOS version jumps when the app is not uninstalled; the same bundle id is required. Uninstall is the only full wipe. In-app delete after confirm is the only intentional delete. Agents: `.cursor/rules/gallery-persistence.mdc`. Tests: `GalleryPersistenceTests`.
 
 ## Privacy
 
@@ -101,7 +108,7 @@ Screens: `home`, `developing`, `process`, `gallery`, `settings`. Use an iPhone 1
 
 ## Device QA / HIG
 
-Walk [`docs/HIG_CHECKLIST.md`](docs/HIG_CHECKLIST.md) on a physical iPhone. Grade notes: [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Design system: [`docs/DESIGN.md`](docs/DESIGN.md).
+Walk [`docs/HIG_CHECKLIST.md`](docs/HIG_CHECKLIST.md) on a physical iPhone. Grade notes: [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Design system: [`docs/DESIGN.md`](docs/DESIGN.md). Motion inventory: [`docs/ANIMATIONS.md`](docs/ANIMATIONS.md).
 
 ## License
 

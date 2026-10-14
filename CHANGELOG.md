@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 How we cut releases, write App Store “What’s New”, and bump versions:
-[`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md).
+[`docs/CHANGELOG_STRATEGY.md`](docs/CHANGELOG_STRATEGY.md). Version bump helper: [`Scripts/cut-version.sh`](Scripts/cut-version.sh).
 
 ## [Unreleased]
 
@@ -18,7 +18,41 @@ How we cut releases, write App Store “What’s New”, and bump versions:
 
 ### Fixed
 
-### Removed
+## [1.2.0] - 2026-10-12
+
+Better color chemistry — denser darks, warmer reds, quieter greens. Smoother gallery; a soft fold when there's a note.
+
+<!-- App Store What’s New:
+better color chemistry.
+denser darks. warmer reds. quieter greens.
+better performance. smoother scroll.
+a little fold when there's a note behind.
+"color is my day-long obsession, joy and torment." — monet
+-->
+
+### Added
+
+- **the pack** — five film looks drawn at shutter (never named in the product UI); look + strength persist so reburn matches
+- Soft per-print expression (usually gentle, sometimes bold) so harsh knobs don’t hit every frame
+- Gallery note cue — soft-yellow dog-ear when a print has a back note; Process shows `there's a note behind.`
+- Download saves front **and** back when a note exists
+- Swipe down on a gallery-opened print to return to the gallery
+- Gallery scroll rail for long albums
+- Strip caption size + highlight defaults in Settings; share sheet; multi-download; centered delete confirm
+
+### Changed
+
+- Film chemistry retuned toward denser darks and warmer reds — no fake corner leak, cream bloom, or grain overlay
+- Gallery / Process thumbs decode downsampled off the main thread so large albums stay smooth; prints still live in Documents across updates
+- Smoother Process flip; font pickers are serif / script / typewriter only
+- Process strip / back editors apply live; more of the screen for the print
+
+### Fixed
+
+- Process paging no longer sticks between two prints
+- Gallery scroll / rail / tap fights on older phones and long albums
+- Opening strip or note sheets without edits no longer reburns (no flicker on Done)
+- Gallery restores prints still on disk when the index is thin or fails to decode
 
 ## [1.0.0] - 2026-09-01
 
@@ -77,5 +111,6 @@ hello. take a photo. write on the strip. keep a little stack of prints that neve
 - Settings **save to photos when i shoot**
 - Settings disclaimer / not-affiliated line (triple-tap credit mailto remains)
 
-[Unreleased]: https://github.com/RayAyan/postcardfilm/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/RayAyan/postcardfilm/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/RayAyan/postcardfilm/compare/v1.0.0...v1.2.0
 [1.0.0]: https://github.com/RayAyan/postcardfilm/releases/tag/v1.0.0

@@ -24,6 +24,12 @@ struct FrameLayout: Equatable {
 }
 
 enum FrameGeometry {
+    /// Width / height of the default Polaroid canvas — one source for Process, Gallery, thumbs.
+    static var canvasAspect: CGFloat {
+        let layout = computeFrameLayout()
+        return CGFloat(layout.canvasWidth) / CGFloat(layout.canvasHeight)
+    }
+
     /// Compute Polaroid canvas layout for a square photo.
     static func computeFrameLayout(imageSide: Int = FrameConstants.imageSide) -> FrameLayout {
         let side = Int(round(Double(imageSide) * FrameConstants.sideRatio))

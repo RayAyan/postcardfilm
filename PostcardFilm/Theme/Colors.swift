@@ -30,4 +30,10 @@ enum AppTheme {
     static let hitTarget: CGFloat = 44
     static let shutter: CGFloat = 72
     static let gap: CGFloat = 8
+    /// Shared leading edge for large-title screens (Gallery / Settings) and list chips.
+    static let pageGutter: CGFloat = 20
+    /// Slim black margin around the Process print — uses width while leaving a border.
+    static let processCardGutter: CGFloat = 12
+    /// Gap under Home viewfinder / Process print to the centered tagline or hint.
+    static let taglineGap: CGFloat = 14
 }
