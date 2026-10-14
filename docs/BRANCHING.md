@@ -40,8 +40,8 @@ If `main` already has a next minor you have **not** distributed, do **not** merg
 
 ## Current
 
-- **`release`** points at **1.0.0** (build 1) — tag `v1.0.0` — live on the App Store.
-- **`main` / `test`** candidate line: **1.2.0** (build 3) — five film looks, notes fold, calmer gallery. Archive from **`main`** for TestFlight.
-- **`test`** stays the day-to-day branch.
+- **`release`** points at **1.2.0** (build 3) — live on the App Store (production ship 2026-10-14).
+- **`main`** / **`test`** match that ship after the production merge; next work lands on **`test`**.
+- Archive future candidates from **`main`** only.
 
 See also: [CHANGELOG_STRATEGY.md](CHANGELOG_STRATEGY.md) (semver, What’s New, cut checklist), [`.cursor/rules/branching.mdc`](../.cursor/rules/branching.mdc).
