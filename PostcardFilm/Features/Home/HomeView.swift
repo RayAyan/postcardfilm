@@ -14,6 +14,9 @@ struct HomeView: View {
     @State private var shutterPressed = false
     @State private var captureError: String?
     @State private var showCaptureAlert = false
+    /// Prevents re-tapping the gallery chip when it sits under the nav back chevron after pop.
+    @State private var galleryChipArmed = true
+    @State private var galleryChipArmTask: Task<Void, Never>?
     #if DEBUG
     @StateObject private var filmDebug = FilmDebugSession()
     @State private var showFilmDebugSheet = false
@@ -75,7 +78,6 @@ struct HomeView: View {
                     await capture()
                 }
             }
-            .onDisappear { camera.stop() }
             .onAppear {
                 Haptics.prepare()
                 if usesCamera, camera.permission == .authorized {
@@ -83,8 +85,22 @@ struct HomeView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                guard usesCamera, phase == .active, camera.permission == .authorized else { return }
-                Task { await camera.resume() }
+                guard usesCamera, camera.permission == .authorized else { return }
+                switch phase {
+                case .active:
+                    // Keep session warm under Gallery/Settings; resume when foregrounded.
+                    Task { await camera.resume() }
+                case .background:
+                    camera.stop()
+                default:
+                    break
+                }
+            }
+            .onChange(of: path.count) { oldCount, newCount in
+                // Back from Gallery/Settings: chip shares the leading hit zone with the chevron.
+                if oldCount > 0, newCount == 0 {
+                    disarmGalleryChipBriefly()
+                }
             }
         }
     }
@@ -133,6 +149,7 @@ struct HomeView: View {
     private var topBar: some View {
         HStack(alignment: .top) {
             Button {
+                guard galleryChipArmed else { return }
                 path.append(HomeRoute.gallery)
             } label: {
                 VStack(spacing: 4) {
@@ -164,7 +181,7 @@ struct HomeView: View {
                 .frame(minWidth: AppTheme.hitTarget, minHeight: AppTheme.hitTarget)
             }
             .accessibilityLabel("Gallery")
-            .disabled(capturing)
+            .disabled(capturing || !galleryChipArmed)
 
             Spacer()
 
@@ -393,6 +410,16 @@ struct HomeView: View {
             capturing = false
             captureError = error.localizedDescription
             showCaptureAlert = true
+        }
+    }
+
+    private func disarmGalleryChipBriefly() {
+        galleryChipArmTask?.cancel()
+        galleryChipArmed = false
+        galleryChipArmTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 550_000_000)
+            guard !Task.isCancelled else { return }
+            galleryChipArmed = true
         }
     }
 }

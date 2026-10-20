@@ -24,9 +24,11 @@ Gallery persistence is unrelated: never wipe prints while tuning motion. See [`.
 | Process | Flip toolbar icon rotate | same | easeInOut 0.45s with `isFlipped` | `.none` | Browse |
 | Process | Flip chip press scale | same | easeOut **0.15s** (not spring) | `.none` | Tuned for older GPUs |
 | Process | Card shadow during flip | same | Collapsed while `isFlipping` | n/a | Tuned |
-| Process | Swipe-down dismiss | same | offset + opacity; easeOut ~0.18s | Instant `dismiss()` | Browse |
+| Process | Swipe-down dismiss | same | offset + opacity; easeOut **0.3s** then `dismiss()` | Instant `dismiss()` | Browse |
 | Process | Develop overlay end | same | easeOut 0.25s `isDeveloping` | Same path | Document only |
-| Gallery | Select / long-press chrome | [`GalleryView.swift`](../PostcardFilm/Features/Gallery/GalleryView.swift) | easeOut 0.12s | n/a | Light — leave |
+| Gallery | Select / long-press / drag-paint chrome | [`GalleryView.swift`](../PostcardFilm/Features/Gallery/GalleryView.swift) | easeOut 0.12s | n/a | Light — leave |
+| Gallery | Batch download checkmark hold | same | ~1.0s then exit select | Exit immediately | Browse |
+| Gallery | Batch delete fade-out | same | opacity + scale easeOut 0.2s then delete | Immediate delete | Browse |
 | Gallery | Scroll rail expand + thumb track | [`GalleryScrollRail.swift`](../PostcardFilm/Features/Gallery/GalleryScrollRail.swift) | easeOut ~0.16s widen (6→14) + slight thumb grow; springy thumb follow only when not scrubbing | n/a | Scrubs via contentOffset; overlays trailing gutter |
 | Gallery→Process | Horizontal page swipe | Process lazy `ScrollView` paging | System paging | n/a | Lazy pages; no extra chrome |
 | Shared | Delete confirm fade | [`DeleteConfirmModal.swift`](../PostcardFilm/Features/Shared/DeleteConfirmModal.swift) | opacity easeOut 0.18s | n/a | Leave |

@@ -12,8 +12,10 @@ Maps shipping features to logic tests, front-end checks ([`HIG_CHECKLIST.md`](HI
 | Capture | the pack (5 stocks, no UI) | `FilmStockTests` | HIG Identity (implicit) | DESIGN Polaroid look |
 | Gallery | Grid + leading subtext | `FrameGeometryTests` (frame) | HIG Gallery | DESIGN Alignment |
 | Gallery | Empty state | — | HIG Gallery | Brand |
-| Gallery | Select / long-press / batch delete | `GallerySelectionTests` | HIG Gallery | DESIGN Strip and reverse |
+| Gallery | Select / long-press / drag-paint / batch delete | `GallerySelectionTests` | HIG Gallery | DESIGN Strip and reverse |
+| Gallery | Batch download checkmark + delete fade | — | HIG Gallery | ANIMATIONS Gallery |
 | Gallery | Analog scroll rail + scroll-friendly cells | — | HIG Gallery | DESIGN Alignment / [`docs/BUGS.md`](BUGS.md) |
+| Home | Gallery chip debounce after pop; camera warm under Gallery | — | HIG Chrome | DESIGN Strip and reverse |
 | Gallery / Process | Downsampled thumb cache (grid 480 / process 1400) + async load | `ThumbnailCacheTests` | HIG Performance | ANIMATIONS decode rule |
 | Gallery | Note dog-ear fold on cells with back note | — | HIG Gallery | DESIGN Strip and reverse |
 | Gallery | Multi-download (front + back when noted) | — | HIG Gallery | DESIGN Strip and reverse |

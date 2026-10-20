@@ -396,10 +396,11 @@ struct ProcessView: View {
                         dismissDrag = 0
                         dismiss()
                     } else {
-                        withAnimation(.easeOut(duration: 0.18)) {
-                            dismissDrag = UIScreen.main.bounds.height * 0.9
+                        let duration: TimeInterval = 0.3
+                        withAnimation(.easeOut(duration: duration)) {
+                            dismissDrag = UIScreen.main.bounds.height
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
                             dismiss()
                         }
                     }

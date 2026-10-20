@@ -45,4 +45,59 @@ final class GallerySelectionTests: XCTestCase {
         )
         XCTAssertEqual(result.selected, ["b"])
     }
+
+    func testPaintModeSelectsWhenUnselected() {
+        let mode = GallerySelectionLogic.paintMode(for: "a", startingFrom: [])
+        XCTAssertEqual(mode, .select)
+    }
+
+    func testPaintModeDeselectsWhenSelected() {
+        let mode = GallerySelectionLogic.paintMode(for: "a", startingFrom: ["a", "b"])
+        XCTAssertEqual(mode, .deselect)
+    }
+
+    func testApplyDragHitSelectInserts() {
+        let next = GallerySelectionLogic.applyDragHit(
+            id: "b",
+            mode: .select,
+            to: ["a"]
+        )
+        XCTAssertEqual(next, ["a", "b"])
+    }
+
+    func testApplyDragHitSelectIsIdempotent() {
+        let next = GallerySelectionLogic.applyDragHit(
+            id: "a",
+            mode: .select,
+            to: ["a"]
+        )
+        XCTAssertEqual(next, ["a"])
+    }
+
+    func testApplyDragHitDeselectRemoves() {
+        let next = GallerySelectionLogic.applyDragHit(
+            id: "a",
+            mode: .deselect,
+            to: ["a", "b"]
+        )
+        XCTAssertEqual(next, ["b"])
+    }
+
+    func testApplyDragHitDeselectIsIdempotent() {
+        let next = GallerySelectionLogic.applyDragHit(
+            id: "c",
+            mode: .deselect,
+            to: ["a"]
+        )
+        XCTAssertEqual(next, ["a"])
+    }
+
+    func testApplyDragHitsOrderedStroke() {
+        let next = GallerySelectionLogic.applyDragHits(
+            ["a", "b", "c"],
+            mode: .select,
+            to: []
+        )
+        XCTAssertEqual(next, ["a", "b", "c"])
+    }
 }

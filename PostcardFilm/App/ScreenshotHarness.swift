@@ -4,7 +4,7 @@ import UIKit
 
 /// Simulator DEBUG-only support for capturing App Store screenshots (no camera).
 /// Launch with `-SCREENSHOTS -SCREENSHOT_SCREEN <screen>` and place square source
-/// photos (see `Marketing/seed/00.jpg`…) in the app container's `Documents/_seed`.
+/// JPEG photos in the app container's `Documents/_seed`.
 ///
 /// Hard rule: never wipe `Documents/polaroids`. Seed only upserts `seed-*` folders
 /// and merges into the index so real UUID prints survive. See

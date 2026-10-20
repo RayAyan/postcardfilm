@@ -87,7 +87,7 @@ Branches: [`docs/BRANCHING.md`](docs/BRANCHING.md). Checklist: [`docs/CHANGELOG_
 
 **Simulator only.** Never add `-SCREENSHOTS` to the scheme used to Run on a physical phone — the harness is compiled out of every device binary, and must never wipe real prints.
 
-App Store assets live in `Marketing/AppStore/iphone-6.5/` (1284 × 2778, no alpha). Finished sample prints live in `Marketing/AppStore/prints/`; square source JPEGs for the DEBUG harness live in `Marketing/seed/` (`00.jpg`…). Copy those into the **Simulator** app container's `Documents/_seed`, then:
+Place square source JPEGs in the **Simulator** app container's `Documents/_seed`, then:
 
 ```bash
 xcrun simctl launch <device> com.postcardfilm.app -SCREENSHOTS -SCREENSHOT_SCREEN gallery

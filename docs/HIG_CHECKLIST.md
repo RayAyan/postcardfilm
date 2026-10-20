@@ -32,13 +32,14 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 - [ ] Empty: `no prints yet.` + `take one`
 - [ ] Populated: leading-aligned subtext `prints you've kept.` at 20pt inset (`AppTheme.pageGutter`)
 - [ ] Equal-size 3-column cells; content fits SE-class width
-- [ ] Select / deselect all; long-press enters select; tap toggles
-- [ ] Inline select title (not truncated)
+- [ ] Cancel + select / deselect all; long-press enters select; tap toggles; drag across paints select/deselect
+- [ ] Large title stays large in select (`n selected`); no large↔inline flicker
 - [ ] Centered delete modal: 1 print → `are you sure, delete this print?`; many → `are you sure, delete n prints?`; **delete** + **go back**
-- [ ] Multi-download in select mode (front + back when a note exists)
+- [ ] Multi-download: spinner while saving, then checkmark, then exit (front + back when a note exists)
+- [ ] Batch delete fades selected thumbs then removes (Reduce Motion: immediate)
 - [ ] Soft-yellow dog-ear fold on cells that have a back note; Process centered `there's a note behind.` + highlighted flip when a note exists
 - [ ] Long albums: trailing scroll rail overlays right gutter (grid gutters stay equal), thumb tracks scroll, expands on press, continuous scrub; short albums keep system indicator
-- [ ] Interactive pop gesture works
+- [ ] While selecting: no interactive pop and no back chevron to camera; Cancel exits select on gallery
 
 ## Process
 
@@ -72,6 +73,7 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 ## Chrome & layout
 
 - [ ] Gallery chip, Settings, Process flip/share/delete/download ≥ 44×44 pt
+- [ ] Gallery chip does not re-open Gallery immediately after back (leading-edge debounce)
 - [ ] Safe area / Dynamic Island / home indicator respected
 - [ ] Portrait only
 - [ ] Dynamic Type default + larger sizes: chips still readable (`minimumScaleFactor`)
