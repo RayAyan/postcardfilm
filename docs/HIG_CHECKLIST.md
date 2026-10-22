@@ -37,7 +37,7 @@ Simulator can cover layout, copy, sheets, and the delete modal. Camera, Photos a
 - [ ] Centered delete modal: 1 print → `are you sure, delete this print?`; many → `are you sure, delete n prints?`; **delete** + **go back**
 - [ ] Multi-download: spinner while saving, then checkmark, then exit (front + back when a note exists)
 - [ ] Batch delete fades selected thumbs then removes (Reduce Motion: immediate)
-- [ ] Soft-yellow dog-ear fold on cells that have a back note; Process centered `there's a note behind.` + highlighted flip when a note exists
+- [ ] Burnt-orange dog-ear fold on cells that have a back note; Process centered `there's a note behind.` + highlighted flip when a note exists
 - [ ] Long albums: trailing scroll rail overlays right gutter (grid gutters stay equal), thumb tracks scroll, expands on press, continuous scrub; short albums keep system indicator
 - [ ] While selecting: no interactive pop and no back chevron to camera; Cancel exits select on gallery
 
